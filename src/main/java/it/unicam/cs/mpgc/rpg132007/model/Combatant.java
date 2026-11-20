@@ -1,0 +1,190 @@
+package it.unicam.cs.mpgc.rpg132007.model;
+
+import java.util.EnumMap;
+import java.util.Map;
+
+/**
+ * Base comune di eroe e nemici: statistiche, danni subiti, cure e stati alterati.
+ * Modificatori e stati alterati durano solo per la battaglia in corso ({@link #restore()} li azzera).
+ */
+public abstract class Combatant {
+
+    /** Con difesa pari a DEFENSE_SCALE il danno si dimezza. */
+    public static final int DEFENSE_SCALE = 40;
+    public static final int MAX_STAGE = 3;
+
+    private final String name;
+    private final Appearance appearance;
+    private final Element element;
+    private final Map<Stat, Integer> stages = new EnumMap<>(Stat.class);
+    private int level;
+    private Stats stats;
+    private int hp;
+    private boolean defending;
+    private Status status;
+    private int statusTurns;
+
+    protected Combatant(String name, int level, Stats stats, Appearance appearance, Element element) {
+        this.name = name;
+        this.element = element;
+        this.level = level;
+        this.stats = stats;
+        this.appearance = appearance;
+        this.hp = stats.maxHp();
+    }
+
+    public int takeDamage(int rawDamage) {
+        return takeDamage(rawDamage, false);
+    }
+
+    /**
+     * Applica il danno, ridotto in proporzione alla difesa se ignoreDefense è false, dimezzato se in guardia.
+     * La riduzione è proporzionale e non sottrattiva: la difesa alta non azzera mai i colpi deboli
+     * e ignorarla non diventa esagerato a livelli alti. Ritorna il danno effettivo (almeno 1).
+     */
+    public int takeDamage(int rawDamage, boolean ignoreDefense) {
+        int defense = ignoreDefense ? 0 : getDefense();
+        int damage = Math.max(1, rawDamage * DEFENSE_SCALE / (DEFENSE_SCALE + defense));
+        if (defending) {
+            damage = Math.max(1, damage / 2);
+        }
+        hp = Math.max(0, hp - damage);
+        return damage;
+    }
+
+    /** Cura fino al massimo. Ritorna gli HP effettivamente recuperati. */
+    public int heal(int amount) {
+        int before = hp;
+        hp = Math.min(stats.maxHp(), hp + amount);
+        return hp - before;
+    }
+
+    /** Sposta il modificatore di una statistica, tra -MAX_STAGE e +MAX_STAGE. Ritorna di quanto è cambiato davvero. */
+    public int changeStage(Stat stat, int delta) {
+        int before = getStage(stat);
+        stages.put(stat, Math.clamp(before + delta, -MAX_STAGE, MAX_STAGE));
+        return getStage(stat) - before;
+    }
+
+    public int getStage(Stat stat) {
+        return stages.getOrDefault(stat, 0);
+    }
+
+    /** Ogni livello positivo vale +25%; quelli negativi dividono allo stesso modo (-1 = x0.8, -3 = x0.57). */
+    private int withStage(int value, Stat stat) {
+        int stage = getStage(stat);
+        return stage >= 0 ? value * (4 + stage) / 4 : value * 4 / (4 - stage);
+    }
+
+    /**
+     * Prova ad applicare uno stato alterato per qualche turno.
+     * Fallisce (ritorna false) se ne ha già uno, se è a terra o se è immune.
+     */
+    public boolean inflict(Status newStatus, int turns) {
+        if (status != null || !isAlive() || isImmuneTo(newStatus)) {
+            return false;
+        }
+        status = newStatus;
+        statusTurns = turns;
+        return true;
+    }
+
+    /** Le sottoclassi possono rendere immuni ad alcuni stati (es. i boss al sonno). */
+    protected boolean isImmuneTo(Status s) {
+        return false;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public int getStatusTurns() {
+        return statusTurns;
+    }
+
+    /** Consuma un turno dello stato; quando arriva a zero lo stato sparisce. Ritorna true se è appena guarito. */
+    public boolean countDownStatus() {
+        if (status == null) {
+            return false;
+        }
+        statusTurns--;
+        if (statusTurns <= 0) {
+            status = null;
+            statusTurns = 0;
+            return true;
+        }
+        return false;
+    }
+
+    /** Toglie una % degli HP massimi (veleno, bruciatura), ignorando difesa e guardia. Ritorna il danno. */
+    public int loseHpPercent(int percent) {
+        int damage = Math.max(1, stats.maxHp() * percent / 100);
+        hp = Math.max(0, hp - damage);
+        return damage;
+    }
+
+    /** Riporta il combattente in piena forma (inizio battaglia). */
+    public void restore() {
+        hp = stats.maxHp();
+        defending = false;
+        status = null;
+        statusTurns = 0;
+        stages.clear();
+    }
+
+    public boolean isAlive() {
+        return hp > 0;
+    }
+
+    protected void setLevel(int level) {
+        this.level = level;
+    }
+
+    protected void setStats(Stats stats) {
+        this.stats = stats;
+        hp = Math.min(hp, stats.maxHp());
+    }
+
+    public void setDefending(boolean defending) {
+        this.defending = defending;
+    }
+
+    public boolean isDefending() {
+        return defending;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Element getElement() {
+        return element;
+    }
+
+    public Appearance getAppearance() {
+        return appearance;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public int getHp() {
+        return hp;
+    }
+
+    public int getMaxHp() {
+        return stats.maxHp();
+    }
+
+    /** Attacco effettivo, modificatori compresi. La bruciatura lo riduce di un quarto. */
+    public int getAttack() {
+        int attack = withStage(stats.attack(), Stat.ATTACK);
+        return status == Status.BRUCIATURA ? attack * 3 / 4 : attack;
+    }
+
+    /** Difesa effettiva, modificatori compresi. */
+    public int getDefense() {
+        return withStage(stats.defense(), Stat.DEFENSE);
+    }
+}
