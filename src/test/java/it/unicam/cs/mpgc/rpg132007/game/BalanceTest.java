@@ -1,22 +1,21 @@
 package it.unicam.cs.mpgc.rpg132007.game;
 
 import it.unicam.cs.mpgc.rpg132007.action.Action;
-import it.unicam.cs.mpgc.rpg132007.action.Attack;
-import it.unicam.cs.mpgc.rpg132007.action.DamageSkill;
-import it.unicam.cs.mpgc.rpg132007.action.DrinkPotion;
+import it.unicam.cs.mpgc.rpg132007.action.DamageMove;
 import it.unicam.cs.mpgc.rpg132007.action.Skill;
-import it.unicam.cs.mpgc.rpg132007.action.StatusSkill;
+import it.unicam.cs.mpgc.rpg132007.action.StatusMove;
+import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
+import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClass;
+import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
 import it.unicam.cs.mpgc.rpg132007.model.Combatant;
-import it.unicam.cs.mpgc.rpg132007.model.Element;
-import it.unicam.cs.mpgc.rpg132007.model.Enemy;
-import it.unicam.cs.mpgc.rpg132007.model.Hero;
 import it.unicam.cs.mpgc.rpg132007.persistence.SaveData;
 import it.unicam.cs.mpgc.rpg132007.persistence.SaveRepository;
 import it.unicam.cs.mpgc.rpg132007.world.StageEnemyFactory;
 import org.junit.jupiter.api.Test;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,6 +33,7 @@ class BalanceTest {
 
     private static final int BATTLES = 70;
     private static final boolean DEBUG = Boolean.getBoolean("balance.debug");
+    private static final HeroClassCatalog CLASSES = new HeroClasses();
 
     private record Result(int stage, int level, int defeats, int turns) {
     }
@@ -52,7 +52,7 @@ class BalanceTest {
     @Test
     void classesProgressAtSimilarPace() {
         Map<String, Result> results = new LinkedHashMap<>();
-        for (HeroClass heroClass : HeroClasses.ALL) {
+        for (HeroClass heroClass : CLASSES.all()) {
             results.put(heroClass.name(), play(heroClass));
         }
         results.forEach((name, r) -> System.out.printf("%-10s stage %2d  Lv %2d  sconfitte %2d  turni/battaglia %.1f%n",
@@ -69,7 +69,7 @@ class BalanceTest {
     }
 
     private static Result play(HeroClass heroClass) {
-        Game game = new Game(new StageEnemyFactory(), NO_SAVES, new Random(42));
+        Game game = new Game(new StageEnemyFactory(), CLASSES, NO_SAVES, new Random(42));
         game.newGame("Sim", heroClass);
         int defeats = 0;
         int turns = 0;
@@ -81,6 +81,9 @@ class BalanceTest {
                 game.playTurn(choose(game.getHero(), game.getBattle().getEnemy(), usedBuffs));
                 turns++;
                 assertTrue(++battleTurns < 300, "battaglia infinita con " + heroClass.name());
+            }
+            while (game.pendingSkill().isPresent()) {
+                game.learnPendingSkill(oldest(game.getHero())); // le mosse nuove sono di solito più forti
             }
             boolean won = game.getBattle().heroWon();
             if (!won) {
@@ -118,24 +121,24 @@ class BalanceTest {
                 return skill;
             }
         }
-        DrinkPotion potion = new DrinkPotion(hero.getInventory());
+        Action potion = hero.getItems().getFirst();
         if (hpPercent < 30 && hero.canUse(potion)) {
             return potion;
         }
         for (Skill skill : hero.getSkills()) {
             boolean worthIt = !skill.targetsEnemy() || (enemy.getStatus() == null && !enemy.isBoss());
-            if (skill instanceof StatusSkill && skill.category().equals("STATO") && worthIt
+            if (skill.move() instanceof StatusMove && skill.category().equals("STATO") && worthIt
                     && hero.canUse(skill) && usedBuffs.add(skill.name())) {
                 return skill;
             }
         }
-        Action best = new Attack();
-        double bestDamage = expected(hero, enemy, 100, 1, false, Element.NEUTRO);
+        Action best = hero.getMoves().getFirst(); // attacco base
+        double bestDamage = expected(hero, enemy, 100, 1, false);
         for (Skill skill : hero.getSkills()) {
-            if (skill instanceof DamageSkill d && hero.canUse(d)) {
-                double dmg = expected(hero, enemy, d.powerPercent(), d.hits(), d.piercing(), d.element());
+            if (skill.move() instanceof DamageMove d && hero.canUse(skill)) {
+                double dmg = expected(hero, enemy, d.powerPercent(), d.hits(), d.piercing());
                 if (dmg > bestDamage) {
-                    best = d;
+                    best = skill;
                     bestDamage = dmg;
                 }
             }
@@ -143,11 +146,14 @@ class BalanceTest {
         return best;
     }
 
-    private static double expected(Hero hero, Enemy enemy, int power, int hits, boolean piercing, Element element) {
+    private static double expected(Hero hero, Enemy enemy, int power, int hits, boolean piercing) {
         double defense = piercing ? 0 : enemy.getDefense();
-        double effectiveness = element.effectivenessAgainst(enemy.getElement()) / 100.0;
-        return hero.getAttack() * power / 100.0 * hits * effectiveness
+        return hero.getAttack() * power / 100.0 * hits
                 * Combatant.DEFENSE_SCALE / (Combatant.DEFENSE_SCALE + defense);
+    }
+
+    private static Skill oldest(Hero hero) {
+        return hero.getSkills().stream().min(Comparator.comparingInt(Skill::unlockLevel)).orElseThrow();
     }
 
     private static int ppLeftPercent(Hero hero) {
@@ -155,7 +161,7 @@ class BalanceTest {
         int max = 0;
         for (Skill skill : hero.getSkills()) {
             left += hero.getPp(skill);
-            max += skill.maxPp();
+            max += skill.maxPp().getAsInt();
         }
         return max == 0 ? 100 : left * 100 / max;
     }

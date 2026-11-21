@@ -1,7 +1,12 @@
 package it.unicam.cs.mpgc.rpg132007.action;
 
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent;
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.Healed;
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.MoveUsed;
 import it.unicam.cs.mpgc.rpg132007.model.Combatant;
 import it.unicam.cs.mpgc.rpg132007.model.Inventory;
+
+import java.util.List;
 
 /** Bere una pozione: consuma il turno, cura metà degli HP massimi. */
 public class DrinkPotion implements Action {
@@ -17,6 +22,11 @@ public class DrinkPotion implements Action {
     @Override
     public String name() {
         return "Pozione";
+    }
+
+    @Override
+    public String label() {
+        return name() + "  x" + inventory.getPotions();
     }
 
     @Override
@@ -40,11 +50,11 @@ public class DrinkPotion implements Action {
     }
 
     @Override
-    public String execute(Combatant user, Combatant target) {
+    public List<BattleEvent> execute(Combatant user, Combatant target, MoveContext context) {
         if (!inventory.usePotion()) {
-            return user.getName() + " non ha pozioni!";
+            throw new IllegalStateException("Nessuna pozione: controllare isUsableBy prima di usarla");
         }
         int healed = user.heal(user.getMaxHp() * HEAL_PERCENT / 100);
-        return user.getName() + " beve una pozione!\n" + user.getName() + " recupera " + healed + " HP.";
+        return List.of(new MoveUsed(user.getName(), name()), new Healed(user.getName(), healed));
     }
 }

@@ -73,11 +73,6 @@
 
 .gold { -fx-text-fill: #ffd866; }
 
-.skill-list {
-    -fx-text-fill: #8be9fd;
-    -fx-font-size: 12px;
-}
-
 /* ---------- arena ---------- */
 .arena {
     -fx-background-color: linear-gradient(to bottom, #121826 0%, #161d2b 55%, #1b2232 100%);
@@ -260,7 +255,7 @@
     -fx-background-radius: 5;
 }
 
-/* ---------- elementi e stati alterati ---------- */
+/* ---------- stati alterati ---------- */
 .chip {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
@@ -269,12 +264,6 @@
 }
 
 .info-box .chip, .textbox .chip { -fx-text-fill: #ffffff; }
-.el-neutro { -fx-background-color: #8a8a8a; }
-.el-fuoco  { -fx-background-color: #e8613c; }
-.el-acqua  { -fx-background-color: #3a8fd8; }
-.el-natura { -fx-background-color: #4caf50; }
-.el-luce   { -fx-background-color: #d4a514; }
-.el-ombra  { -fx-background-color: #7a4fc4; }
 
 .st-veleno     { -fx-background-color: #9c4dcc; }
 .st-bruciatura { -fx-background-color: #e8613c; }
@@ -288,12 +277,7 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.8), 6, 0.4, 0, 0);
 }
 
-.fx-neutro  { -fx-text-fill: #ffffff; }
-.fx-fuoco   { -fx-text-fill: #ff7a3c; }
-.fx-acqua   { -fx-text-fill: #5ec8ff; }
-.fx-natura  { -fx-text-fill: #8be36b; }
-.fx-luce    { -fx-text-fill: #ffe066; }
-.fx-ombra   { -fx-text-fill: #c08cff; }
+.fx-hit     { -fx-text-fill: #ffffff; }
 .fx-support { -fx-text-fill: #7dffb0; }
 
 /* ---------- schermata STATO ---------- */

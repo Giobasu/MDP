@@ -1,15 +1,23 @@
 package it.unicam.cs.mpgc.rpg132007.action;
 
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent;
 import it.unicam.cs.mpgc.rpg132007.model.Combatant;
-import it.unicam.cs.mpgc.rpg132007.model.Element;
+
+import java.util.List;
+import java.util.OptionalInt;
 
 /** Una mossa eseguibile in battaglia. Nuove mosse = nuove classi che implementano questa interfaccia. */
 public interface Action {
 
     String name();
 
-    /** Esegue la mossa e ritorna il testo per il log: ogni riga ("\n") diventa un messaggio a sé. */
-    String execute(Combatant user, Combatant target);
+    /** Esegue la mossa e ritorna cosa è successo, nell'ordine. Il testo per il giocatore lo scrive il narratore. */
+    List<BattleEvent> execute(Combatant user, Combatant target, MoveContext context);
+
+    /** Testo della voce di menu (di base il nome; gli oggetti ci aggiungono la quantità). */
+    default String label() {
+        return name();
+    }
 
     /** Breve spiegazione mostrata nel menu delle mosse. */
     default String description() {
@@ -21,11 +29,6 @@ public interface Action {
         return "FISICO";
     }
 
-    /** Elemento della mossa: decide i danni superefficaci e il colore dell'animazione. */
-    default Element element() {
-        return Element.NEUTRO;
-    }
-
     /** true se la mossa colpisce l'avversario, false se agisce su chi la usa (cure, potenziamenti). */
     default boolean targetsEnemy() {
         return true;
@@ -34,5 +37,10 @@ public interface Action {
     /** Condizioni extra oltre ai PP (es. avere ancora pozioni). */
     default boolean isUsableBy(Combatant user) {
         return true;
+    }
+
+    /** PP massimi della mossa; vuoto se si può usare senza limiti (attacco base, mosse dei nemici). */
+    default OptionalInt maxPp() {
+        return OptionalInt.empty();
     }
 }

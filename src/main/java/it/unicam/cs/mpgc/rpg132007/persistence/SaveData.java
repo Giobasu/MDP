@@ -1,10 +1,14 @@
 package it.unicam.cs.mpgc.rpg132007.persistence;
 
+import java.util.List;
 import java.util.Map;
 
-/** I dati minimi per ricostruire una partita. usedPp contiene solo le mosse che non hanno i PP al massimo. */
+/**
+ * I dati minimi per ricostruire una partita. usedPp contiene solo le mosse che non hanno i PP al massimo;
+ * skills sono i nomi delle mosse conosciute (vuoto nei salvataggi vecchi).
+ */
 public record SaveData(String name, String heroClass, int level, int exp, int stage, int gold, int potions,
-                       Map<String, Integer> usedPp) {
+                       Map<String, Integer> usedPp, List<String> skills) {
 
     public SaveData {
         if (name == null || name.isBlank() || heroClass == null || heroClass.isBlank()
@@ -12,10 +16,6 @@ public record SaveData(String name, String heroClass, int level, int exp, int st
             throw new IllegalArgumentException("Dati di salvataggio non validi");
         }
         usedPp = Map.copyOf(usedPp);
-    }
-
-    /** Senza PP salvati: tutte le mosse ripartono al massimo. */
-    public SaveData(String name, String heroClass, int level, int exp, int stage, int gold, int potions) {
-        this(name, heroClass, level, exp, stage, gold, potions, Map.of());
+        skills = List.copyOf(skills);
     }
 }

@@ -1,15 +1,75 @@
 package it.unicam.cs.mpgc.rpg132007.action;
 
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent;
+import it.unicam.cs.mpgc.rpg132007.model.Combatant;
+
+import java.util.List;
+import java.util.OptionalInt;
+
 /**
- * Una mossa speciale che si sblocca a un certo livello e si può usare un numero limitato di volte (PP),
- * come nei JRPG classici. I PP non si ricaricano tra una battaglia e l'altra: vedi {@link #UNLIMITED}.
+ * Mossa di un eroe: avvolge una mossa qualsiasi aggiungendo il livello di sblocco e un numero limitato di usi (PP),
+ * come nei JRPG classici. Tutto il resto lo delega alla mossa avvolta (decorator).
  */
-public interface Skill extends Action {
+public final class Skill implements Action {
 
-    /** maxPp per le mosse senza limite (le mosse speciali dei nemici). */
-    int UNLIMITED = 0;
+    private final Action move;
+    private final int unlockLevel;
+    private final int maxPp;
 
-    int unlockLevel();
+    public Skill(Action move, int unlockLevel, int maxPp) {
+        if (unlockLevel < 1 || maxPp < 1) {
+            throw new IllegalArgumentException("Skill non valida: " + move.name());
+        }
+        this.move = move;
+        this.unlockLevel = unlockLevel;
+        this.maxPp = maxPp;
+    }
 
-    int maxPp();
+    public Action move() {
+        return move;
+    }
+
+    public int unlockLevel() {
+        return unlockLevel;
+    }
+
+    @Override
+    public OptionalInt maxPp() {
+        return OptionalInt.of(maxPp);
+    }
+
+    @Override
+    public String name() {
+        return move.name();
+    }
+
+    @Override
+    public List<BattleEvent> execute(Combatant user, Combatant target, MoveContext context) {
+        return move.execute(user, target, context);
+    }
+
+    @Override
+    public String label() {
+        return move.label();
+    }
+
+    @Override
+    public String description() {
+        return move.description();
+    }
+
+    @Override
+    public String category() {
+        return move.category();
+    }
+
+    @Override
+    public boolean targetsEnemy() {
+        return move.targetsEnemy();
+    }
+
+    @Override
+    public boolean isUsableBy(Combatant user) {
+        return move.isUsableBy(user);
+    }
 }

@@ -1,42 +1,60 @@
 package it.unicam.cs.mpgc.rpg132007.model;
 
-/** Stati alterati. Come nei JRPG classici un combattente ne può avere uno solo alla volta. */
-public enum Status {
-    VELENO("VELENO", "è avvelenato", "non è più avvelenato", 6),
-    BRUCIATURA("BRUCIATO", "si è bruciato", "non brucia più", 5),
-    PARALISI("PARALISI", "è paralizzato", "non è più paralizzato", 0),
-    SONNO("SONNO", "si è addormentato", "si sveglia", 0);
+import java.util.random.RandomGenerator;
 
-    /** Probabilità (%) che la paralisi faccia saltare il turno. */
-    public static final int PARALYSIS_SKIP_CHANCE = 30;
+/**
+ * Stati alterati. Come nei JRPG classici un combattente ne può avere uno solo alla volta.
+ * Ogni stato descrive da sé il proprio effetto (danno a fine turno, calo d'attacco, turni saltati):
+ * per aggiungerne uno basta una nuova costante (più la sua frase nel narratore),
+ * senza toccare la battaglia né i combattenti.
+ */
+public enum Status {
+    //      etichetta   danno%  attacco%  salta%  si consuma solo saltando il turno
+    VELENO("VELENO", 6, 100, 0, false),
+    BRUCIATURA("BRUCIATO", 5, 75, 0, false),
+    PARALISI("PARALISI", 0, 100, 30, false),
+    SONNO("SONNO", 0, 100, 100, true);
+
+    private static final int ALWAYS = 100;
 
     private final String label;
-    private final String inflicted;
-    private final String cured;
     private final int damagePercent;
+    private final int attackPercent;
+    private final int skipChance;
+    private final boolean countsDownOnSkip;
 
-    Status(String label, String inflicted, String cured, int damagePercent) {
+    Status(String label, int damagePercent, int attackPercent, int skipChance, boolean countsDownOnSkip) {
         this.label = label;
-        this.inflicted = inflicted;
-        this.cured = cured;
         this.damagePercent = damagePercent;
+        this.attackPercent = attackPercent;
+        this.skipChance = skipChance;
+        this.countsDownOnSkip = countsDownOnSkip;
     }
 
     public String label() {
         return label;
     }
 
-    /** Es. "è avvelenato": da attaccare al nome ("Goblin è avvelenato!"). */
-    public String inflictedText() {
-        return inflicted;
-    }
-
-    public String curedText() {
-        return cured;
-    }
-
     /** % degli HP massimi persi a fine turno (0 se lo stato non fa danni). */
     public int damagePercent() {
         return damagePercent;
+    }
+
+    /** % dell'attacco che resta a chi ha questo stato (100 = nessun calo). */
+    public int attackPercent() {
+        return attackPercent;
+    }
+
+    /** Se questo turno va saltato. Il generatore si usa solo per gli stati con una probabilità parziale. */
+    public boolean skipsTurn(RandomGenerator random) {
+        return skipChance >= ALWAYS || (skipChance > 0 && random.nextInt(100) < skipChance);
+    }
+
+    /**
+     * true se i turni dello stato si consumano solo quando fa saltare il turno (il sonno),
+     * false se si consumano a fine turno (tutti gli altri).
+     */
+    public boolean countsDownOnSkip() {
+        return countsDownOnSkip;
     }
 }

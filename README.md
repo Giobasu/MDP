@@ -1,16 +1,16 @@
-# ASCII Quest
+# Asciipon
 
 JRPG a turni con grafica in stile ASCII (JavaFX). Scegli un eroe (Guerriero, Arciere o Lanciere) e affronta stage dopo
 stage nemici sempre più forti, con un boss ogni 5 stage. Ogni classe ha 7 mosse che si sbloccano salendo di livello:
 attacchi, colpi multipli, mosse che ignorano la difesa, veleno, risucchio di HP, potenziamenti e indebolimenti.
+Come nei Pokémon se ne conoscono al massimo 4: per impararne una nuova bisogna dimenticarne una (o rinunciare).
 Le vittorie danno EXP e oro, l'oro compra pozioni. La partita si può salvare e ricaricare.
 
 Ogni mossa ha dei PP (usi disponibili) che non si ricaricano tra una battaglia e l'altra: tornano al massimo
 solo dopo aver sconfitto un boss o dopo una sconfitta. L'attacco base non ha PP e si può usare sempre.
 
-Mosse e nemici hanno un elemento (FUOCO > NATURA > ACQUA > FUOCO, LUCE e OMBRA si battono a vicenda):
-i colpi superefficaci fanno x1.5, quelli poco efficaci x0.6. Alcune mosse causano stati alterati
-(veleno, bruciatura, paralisi, sonno; i boss non si addormentano).
+Alcune mosse causano stati alterati (veleno, bruciatura, paralisi, sonno; i boss non si addormentano).
+Ogni mossa offensiva, di eroi e nemici, ha il 6% di probabilità di essere un colpo critico (+50% di danni).
 
 Dopo ogni vittoria il sentiero si divide: sentiero normale, sentiero élite (nemico più forte, EXP e oro doppi)
 o fonte (ricarica i PP ma non dà ricompense). Prima dei boss la strada è una sola.

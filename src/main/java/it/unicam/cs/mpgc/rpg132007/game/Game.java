@@ -3,13 +3,14 @@ package it.unicam.cs.mpgc.rpg132007.game;
 import it.unicam.cs.mpgc.rpg132007.action.Action;
 import it.unicam.cs.mpgc.rpg132007.action.Skill;
 import it.unicam.cs.mpgc.rpg132007.battle.Battle;
+import it.unicam.cs.mpgc.rpg132007.battle.ItalianNarrator;
+import it.unicam.cs.mpgc.rpg132007.battle.Narrator;
 import it.unicam.cs.mpgc.rpg132007.battle.Message;
 import it.unicam.cs.mpgc.rpg132007.battle.Message.Tone;
+import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
+import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClass;
-import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
-import it.unicam.cs.mpgc.rpg132007.model.Enemy;
-import it.unicam.cs.mpgc.rpg132007.model.Hero;
-import it.unicam.cs.mpgc.rpg132007.model.Inventory;
+import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
 import it.unicam.cs.mpgc.rpg132007.persistence.SaveData;
 import it.unicam.cs.mpgc.rpg132007.persistence.SaveRepository;
 import it.unicam.cs.mpgc.rpg132007.world.EnemyFactory;
@@ -18,12 +19,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.random.RandomGenerator;
 
 /**
  * Lo stato della partita: eroe, stage corrente e battaglia in corso.
  * È l'unico punto d'ingresso per l'interfaccia grafica, che quindi si può sostituire senza toccare il gioco.
+ * Tutte le dipendenze (nemici, classi, salvataggi, caso) arrivano da fuori.
  * Prima di usarla serve {@link #newGame} o {@link #load}.
  */
 public class Game {
@@ -32,35 +33,35 @@ public class Game {
 
     private final EnemyFactory enemies;
     private final SaveRepository saves;
+    private final SaveMapper saveMapper;
     private final RandomGenerator random;
+    private final Narrator narrator = new ItalianNarrator();
     private Hero hero;
     private int stage;
-    private boolean elite;
-    private boolean justRested;
+    /** Decide sia il nemico (élite o no, anche quando si riprova) sia se la fonte è disponibile. */
+    private Route lastRoute;
     private Battle battle;
 
-    public Game(EnemyFactory enemies, SaveRepository saves) {
-        this(enemies, saves, new Random());
-    }
-
     /** Con un generatore fissato (seed) le partite sono ripetibili: serve ai test. */
-    public Game(EnemyFactory enemies, SaveRepository saves, RandomGenerator random) {
+    public Game(EnemyFactory enemies, HeroClassCatalog heroClasses, SaveRepository saves, RandomGenerator random) {
         this.enemies = enemies;
         this.saves = saves;
+        this.saveMapper = new SaveMapper(heroClasses);
         this.random = random;
     }
 
     public void newGame(String heroName, HeroClass heroClass) {
         hero = new Hero(heroName, heroClass);
         stage = 1;
-        elite = false;
+        lastRoute = Route.NORMAL;
         startBattle();
     }
 
     /** (Ri)comincia la battaglia dello stage corrente, sul sentiero scelto per ultimo (riprova dopo una sconfitta). */
     public void startBattle() {
         hero.restore();
-        battle = new Battle(hero, elite ? enemies.createElite(stage) : enemies.create(stage), random);
+        Enemy enemy = lastRoute == Route.ELITE ? enemies.createElite(stage) : enemies.create(stage);
+        battle = new Battle(hero, enemy, random, narrator);
     }
 
     /** Dopo una vittoria: se il prossimo stage è di un boss non c'è scelta di sentiero. */
@@ -70,7 +71,7 @@ public class Game {
 
     /** La fonte non si può prendere due volte di fila, altrimenti si salterebbero stage senza combattere. */
     public List<Route> availableRoutes() {
-        return justRested ? List.of(Route.NORMAL, Route.ELITE) : List.of(Route.values());
+        return lastRoute == Route.SPRING ? List.of(Route.NORMAL, Route.ELITE) : List.of(Route.values());
     }
 
     /**
@@ -81,7 +82,7 @@ public class Game {
         if (!availableRoutes().contains(route)) {
             throw new IllegalStateException("Sentiero non disponibile: " + route);
         }
-        justRested = route == Route.SPRING;
+        lastRoute = route;
         if (route == Route.SPRING) {
             hero.restorePp();
             stage++;
@@ -89,7 +90,6 @@ public class Game {
                     new Message("Trovi una fonte limpida e ti riposi.", Tone.INFO),
                     new Message("I PP di tutte le mosse sono stati ricaricati!", Tone.REWARD));
         }
-        elite = route == Route.ELITE;
         startBattle();
         return List.of();
     }
@@ -119,7 +119,6 @@ public class Game {
         log.add(new Message(enemy.getName() + " è stato sconfitto!", Tone.REWARD));
         log.add(new Message("Trovi " + enemy.getReward().gold() + " monete d'oro.", Tone.REWARD));
         log.addAll(gainExp(enemy.getReward().exp()));
-        elite = false;
         if (enemy.isBoss()) {
             hero.restorePp();
             log.add(new Message("Il boss è caduto: i PP di tutte le mosse sono stati ricaricati!", Tone.REWARD));
@@ -153,19 +152,41 @@ public class Game {
         int oldLevel = hero.getLevel();
         if (hero.gainExp(exp) > 0) {
             log.add(new Message("LEVEL UP! Ora sei al livello " + hero.getLevel() + ".", Tone.REWARD));
-            for (Skill skill : hero.getSkills()) {
-                if (skill.unlockLevel() > oldLevel) {
-                    log.add(new Message("Nuova abilità sbloccata: " + skill.name() + "!", Tone.REWARD));
+            for (Skill skill : hero.getHeroClass().skills()) {
+                if (skill.unlockLevel() > oldLevel && skill.unlockLevel() <= hero.getLevel()) {
+                    log.add(hero.knows(skill)
+                            ? new Message(hero.getName() + " impara " + skill.name() + "!", Tone.REWARD)
+                            : new Message(hero.getName() + " vuole imparare " + skill.name() + ", ma conosce già "
+                                    + Hero.MAX_SKILLS + " mosse.", Tone.INFO));
                 }
             }
         }
         return log;
     }
 
+    /** La skill che l'eroe vuole imparare ma per cui deve dimenticarne un'altra (vedi {@link #learnPendingSkill}). */
+    public Optional<Skill> pendingSkill() {
+        return hero.getPendingSkill();
+    }
+
+    /** Impara la skill in attesa dimenticando forgotten. */
+    public List<Message> learnPendingSkill(Skill forgotten) {
+        Skill learned = hero.getPendingSkill().orElseThrow(() -> new IllegalStateException("Nessuna skill in attesa"));
+        hero.learnPendingSkill(forgotten);
+        return List.of(
+                new Message("1, 2 e... puf! " + hero.getName() + " dimentica " + forgotten.name() + "...", Tone.INFO),
+                new Message("...e impara " + learned.name() + "!", Tone.REWARD));
+    }
+
+    /** Rinuncia alla skill in attesa. */
+    public List<Message> skipPendingSkill() {
+        Skill skipped = hero.getPendingSkill().orElseThrow(() -> new IllegalStateException("Nessuna skill in attesa"));
+        hero.skipPendingSkill();
+        return List.of(new Message(hero.getName() + " non impara " + skipped.name() + ".", Tone.INFO));
+    }
+
     public void save() throws IOException {
-        Inventory inv = hero.getInventory();
-        saves.save(new SaveData(hero.getName(), hero.getHeroClass().id(), hero.getLevel(), hero.getExp(),
-                stage, inv.getGold(), inv.getPotions(), hero.getUsedPp()));
+        saves.save(saveMapper.toSaveData(hero, stage));
     }
 
     /** Ritorna false se non c'è nessun salvataggio. La battaglia in corso riparte da capo. */
@@ -174,13 +195,9 @@ public class Game {
         if (found.isEmpty()) {
             return false;
         }
-        SaveData data = found.get();
-        HeroClass heroClass = HeroClasses.byId(data.heroClass())
-                .orElseThrow(() -> new IOException("Classe eroe sconosciuta nel salvataggio: " + data.heroClass()));
-        hero = new Hero(data.name(), heroClass, data.level(), data.exp(), new Inventory(data.gold(), data.potions()));
-        hero.loadPp(data.usedPp());
-        stage = data.stage();
-        elite = false;
+        hero = saveMapper.toHero(found.get());
+        stage = found.get().stage();
+        lastRoute = Route.NORMAL;
         startBattle();
         return true;
     }

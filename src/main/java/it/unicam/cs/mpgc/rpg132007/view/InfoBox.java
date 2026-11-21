@@ -1,8 +1,7 @@
 package it.unicam.cs.mpgc.rpg132007.view;
 
+import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
 import it.unicam.cs.mpgc.rpg132007.model.Combatant;
-import it.unicam.cs.mpgc.rpg132007.model.Element;
-import it.unicam.cs.mpgc.rpg132007.model.Enemy;
 import it.unicam.cs.mpgc.rpg132007.model.Stat;
 import it.unicam.cs.mpgc.rpg132007.model.Status;
 import javafx.geometry.Pos;
@@ -12,11 +11,10 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-/** Riquadro informazioni stile JRPG classico: nome, elemento, livello, stato alterato, modificatori e barra HP. */
+/** Riquadro informazioni stile JRPG classico: nome, livello, stato alterato, modificatori e barra HP. */
 class InfoBox extends VBox {
 
     private final Label name = new Label();
-    private final Label element = new Label();
     private final Label level = new Label();
     private final Label status = new Label();
     private final Label stages = new Label();
@@ -30,7 +28,7 @@ class InfoBox extends VBox {
         stages.getStyleClass().add("info-status");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox header = new HBox(8, name, element, spacer, level);
+        HBox header = new HBox(8, name, spacer, level);
         header.setAlignment(Pos.CENTER_LEFT);
         hp = new StatBar("HP", null, showHpNumbers, 200, 12);
         HBox footer = new HBox(8, status, stages);
@@ -61,7 +59,6 @@ class InfoBox extends VBox {
         if (boss) {
             getStyleClass().add("boss");
         }
-        chip(element, c.getElement() == Element.NEUTRO ? null : c.getElement().name(), elementClass(c.getElement()));
         Status s = c.getStatus();
         chip(status, s == null ? null : s.label(), s == null ? "" : "st-" + s.name().toLowerCase());
 
@@ -72,14 +69,7 @@ class InfoBox extends VBox {
                 tags.append(stat.shortName()).append(stage > 0 ? "▲" : "▼").append(Math.abs(stage)).append("  ");
             }
         }
-        if (c.isDefending()) {
-            tags.append("GUARDIA");
-        }
         stages.setText(tags.toString().strip());
-    }
-
-    static String elementClass(Element e) {
-        return "el-" + e.name().toLowerCase();
     }
 
     /** Etichetta colorata; text null la nasconde. */

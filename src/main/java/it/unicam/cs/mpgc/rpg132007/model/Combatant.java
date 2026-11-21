@@ -15,39 +15,29 @@ public abstract class Combatant {
 
     private final String name;
     private final Appearance appearance;
-    private final Element element;
     private final Map<Stat, Integer> stages = new EnumMap<>(Stat.class);
     private int level;
     private Stats stats;
     private int hp;
-    private boolean defending;
     private Status status;
     private int statusTurns;
 
-    protected Combatant(String name, int level, Stats stats, Appearance appearance, Element element) {
+    protected Combatant(String name, int level, Stats stats, Appearance appearance) {
         this.name = name;
-        this.element = element;
         this.level = level;
         this.stats = stats;
         this.appearance = appearance;
         this.hp = stats.maxHp();
     }
 
-    public int takeDamage(int rawDamage) {
-        return takeDamage(rawDamage, false);
-    }
-
     /**
-     * Applica il danno, ridotto in proporzione alla difesa se ignoreDefense è false, dimezzato se in guardia.
+     * Applica il danno, ridotto in proporzione alla difesa se ignoreDefense è false.
      * La riduzione è proporzionale e non sottrattiva: la difesa alta non azzera mai i colpi deboli
      * e ignorarla non diventa esagerato a livelli alti. Ritorna il danno effettivo (almeno 1).
      */
     public int takeDamage(int rawDamage, boolean ignoreDefense) {
         int defense = ignoreDefense ? 0 : getDefense();
         int damage = Math.max(1, rawDamage * DEFENSE_SCALE / (DEFENSE_SCALE + defense));
-        if (defending) {
-            damage = Math.max(1, damage / 2);
-        }
         hp = Math.max(0, hp - damage);
         return damage;
     }
@@ -98,10 +88,6 @@ public abstract class Combatant {
         return status;
     }
 
-    public int getStatusTurns() {
-        return statusTurns;
-    }
-
     /** Consuma un turno dello stato; quando arriva a zero lo stato sparisce. Ritorna true se è appena guarito. */
     public boolean countDownStatus() {
         if (status == null) {
@@ -116,7 +102,7 @@ public abstract class Combatant {
         return false;
     }
 
-    /** Toglie una % degli HP massimi (veleno, bruciatura), ignorando difesa e guardia. Ritorna il danno. */
+    /** Toglie una % degli HP massimi (veleno, bruciatura), ignorando la difesa. Ritorna il danno. */
     public int loseHpPercent(int percent) {
         int damage = Math.max(1, stats.maxHp() * percent / 100);
         hp = Math.max(0, hp - damage);
@@ -126,7 +112,6 @@ public abstract class Combatant {
     /** Riporta il combattente in piena forma (inizio battaglia). */
     public void restore() {
         hp = stats.maxHp();
-        defending = false;
         status = null;
         statusTurns = 0;
         stages.clear();
@@ -145,20 +130,8 @@ public abstract class Combatant {
         hp = Math.min(hp, stats.maxHp());
     }
 
-    public void setDefending(boolean defending) {
-        this.defending = defending;
-    }
-
-    public boolean isDefending() {
-        return defending;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public Element getElement() {
-        return element;
     }
 
     public Appearance getAppearance() {
@@ -177,10 +150,10 @@ public abstract class Combatant {
         return stats.maxHp();
     }
 
-    /** Attacco effettivo, modificatori compresi. La bruciatura lo riduce di un quarto. */
+    /** Attacco effettivo: modificatori compresi, ridotto dagli stati che lo indeboliscono (es. bruciatura). */
     public int getAttack() {
         int attack = withStage(stats.attack(), Stat.ATTACK);
-        return status == Status.BRUCIATURA ? attack * 3 / 4 : attack;
+        return status == null ? attack : attack * status.attackPercent() / 100;
     }
 
     /** Difesa effettiva, modificatori compresi. */

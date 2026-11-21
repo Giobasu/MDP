@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -16,6 +17,9 @@ public class PropertiesSaveRepository implements SaveRepository {
 
     /** I PP di ogni mossa sono salvati come "pp.Nome della mossa=5"; i salvataggi vecchi non li hanno. */
     private static final String PP_PREFIX = "pp.";
+    /** Le mosse conosciute sono salvate come "skills=Fendente,Muro di Scudi"; i salvataggi vecchi non le hanno. */
+    private static final String SKILLS = "skills";
+    private static final String SEPARATOR = ",";
 
     private final Path file;
 
@@ -38,6 +42,7 @@ public class PropertiesSaveRepository implements SaveRepository {
         props.setProperty("gold", String.valueOf(data.gold()));
         props.setProperty("potions", String.valueOf(data.potions()));
         data.usedPp().forEach((move, left) -> props.setProperty(PP_PREFIX + move, String.valueOf(left)));
+        props.setProperty(SKILLS, String.join(SEPARATOR, data.skills()));
         Files.createDirectories(file.toAbsolutePath().getParent());
         // scrive su un file temporaneo e poi lo sostituisce: un crash a metà non corrompe il vecchio salvataggio
         Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
@@ -55,6 +60,11 @@ public class PropertiesSaveRepository implements SaveRepository {
             }
         }
         return pp;
+    }
+
+    private static List<String> readSkills(Properties props) {
+        String value = props.getProperty(SKILLS, "");
+        return value.isBlank() ? List.of() : List.of(value.split(SEPARATOR));
     }
 
     @Override
@@ -75,7 +85,8 @@ public class PropertiesSaveRepository implements SaveRepository {
                     Integer.parseInt(props.getProperty("stage")),
                     Integer.parseInt(props.getProperty("gold")),
                     Integer.parseInt(props.getProperty("potions")),
-                    readPp(props)));
+                    readPp(props),
+                    readSkills(props)));
         } catch (IllegalArgumentException e) {
             throw new IOException("Salvataggio corrotto o di una versione precedente: " + file, e);
         }

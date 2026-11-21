@@ -1,36 +1,44 @@
 package it.unicam.cs.mpgc.rpg132007.battle;
 
 import it.unicam.cs.mpgc.rpg132007.action.Action;
+import it.unicam.cs.mpgc.rpg132007.action.MoveContext;
 import it.unicam.cs.mpgc.rpg132007.battle.Message.Fx;
 import it.unicam.cs.mpgc.rpg132007.battle.Message.Tone;
+import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
+import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent;
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.MoveUnavailable;
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatusCured;
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatusDamage;
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.TurnSkipped;
 import it.unicam.cs.mpgc.rpg132007.model.Combatant;
-import it.unicam.cs.mpgc.rpg132007.model.Enemy;
-import it.unicam.cs.mpgc.rpg132007.model.Hero;
 import it.unicam.cs.mpgc.rpg132007.model.Status;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.random.RandomGenerator;
 
 /**
- * Un combattimento a turni eroe contro nemico. Non sa nulla di grafica né di salvataggi.
- * L'unica parte casuale (la paralisi) usa un generatore passato da fuori, così i test sono ripetibili.
+ * Un combattimento a turni eroe contro nemico. Non sa nulla di grafica né di salvataggi,
+ * e nemmeno di testi: le frasi le scrive il {@link Narrator}.
+ * Le parti casuali (colpi critici, stati che fanno saltare il turno) usano un generatore passato da fuori,
+ * così i test sono ripetibili.
  */
 public class Battle {
 
     private final Hero hero;
     private final Enemy enemy;
     private final RandomGenerator random;
+    private final Narrator narrator;
 
-    public Battle(Hero hero, Enemy enemy) {
-        this(hero, enemy, new Random());
-    }
+    /** Probabilità (%) che una mossa sia un colpo critico. */
+    public static final int CRITICAL_CHANCE = 6;
 
-    public Battle(Hero hero, Enemy enemy, RandomGenerator random) {
+    public Battle(Hero hero, Enemy enemy, RandomGenerator random, Narrator narrator) {
         this.hero = hero;
         this.enemy = enemy;
         this.random = random;
+        this.narrator = narrator;
     }
 
     /** Un turno completo: prima l'eroe, poi il nemico se è ancora vivo, infine gli stati alterati. */
@@ -39,72 +47,66 @@ public class Battle {
             throw new IllegalStateException("La battaglia è già finita");
         }
         if (!hero.canUse(heroAction)) {
-            return List.of(message("Non puoi usare " + heroAction.name() + " adesso.", Tone.INFO));
+            return List.of(message(new MoveUnavailable(heroAction.name()), Tone.INFO));
         }
         List<Message> log = new ArrayList<>();
         if (canAct(hero, Tone.HERO, log)) {
-            hero.spendPp(heroAction); // chi dorme o è paralizzato non consuma PP, come nei JRPG classici
+            hero.spendPp(heroAction); // chi salta il turno non consuma PP, come nei JRPG classici
             perform(hero, enemy, heroAction, Tone.HERO, log);
         }
         if (enemy.isAlive() && canAct(enemy, Tone.ENEMY, log)) {
-            // chooseAction viene valutato prima di perform, quindi l'IA vede ancora la guardia del turno prima
-            perform(enemy, hero, enemy.chooseAction(hero), Tone.ENEMY, log);
+            perform(enemy, hero, enemy.chooseAction(), Tone.ENEMY, log);
         }
         endOfTurn(hero, log);
         endOfTurn(enemy, log);
         return log;
     }
 
-    /** Inizio azione: il sonno fa saltare il turno finché dura, la paralisi a volte. */
+    /** Inizio azione: è lo stato alterato a decidere se il turno salta (sempre col sonno, a volte con la paralisi). */
     private boolean canAct(Combatant who, Tone tone, List<Message> log) {
-        if (who.getStatus() == Status.SONNO) {
-            // salta questo turno; se era l'ultimo turno di sonno si sveglia subito dopo e il prossimo agisce
-            log.add(message(who.getName() + " dorme profondamente...", tone));
-            if (who.countDownStatus()) {
-                log.add(message(who.getName() + " " + Status.SONNO.curedText() + "!", tone));
-            }
-            return false;
+        Status status = who.getStatus();
+        if (status == null || !status.skipsTurn(random)) {
+            return true;
         }
-        if (who.getStatus() == Status.PARALISI && random.nextInt(100) < Status.PARALYSIS_SKIP_CHANCE) {
-            log.add(message(who.getName() + " è paralizzato! Non riesce a muoversi.", tone));
-            return false;
+        log.add(message(new TurnSkipped(who.getName(), status), tone));
+        // se era l'ultimo turno (es. di sonno) guarisce subito e il prossimo turno agisce
+        if (status.countsDownOnSkip() && who.countDownStatus()) {
+            log.add(message(new StatusCured(who.getName(), status), tone));
         }
-        return true;
+        return false;
     }
 
-    /** La guardia dura fino al turno successivo di chi l'ha alzata. */
     private void perform(Combatant user, Combatant target, Action action, Tone tone, List<Message> log) {
-        user.setDefending(false);
-        String[] lines = action.execute(user, target).split("\n");
+        MoveContext context = new MoveContext(random.nextInt(100) < CRITICAL_CHANCE);
+        List<BattleEvent> events = action.execute(user, target, context);
         boolean fromHero = user == hero;
         boolean onEnemySide = action.targetsEnemy() == fromHero;
-        Fx fx = new Fx(onEnemySide, fromHero, action.element(), !action.targetsEnemy());
-        for (int i = 0; i < lines.length; i++) {
-            log.add(new Message(lines[i], tone, hero.getHp(), enemy.getHp(), i == 0 ? fx : null));
+        Fx fx = new Fx(onEnemySide, fromHero, !action.targetsEnemy());
+        for (int i = 0; i < events.size(); i++) {
+            log.add(new Message(narrator.describe(events.get(i)), tone, hero.getHp(), enemy.getHp(), i == 0 ? fx : null));
         }
     }
 
-    /** Fine turno: veleno e bruciatura fanno danni, poi ogni stato (tranne il sonno) consuma un turno. */
+    /** Fine turno: gli stati che fanno danni li fanno, poi quelli che si consumano a fine turno perdono un turno. */
     private void endOfTurn(Combatant who, List<Message> log) {
         Status status = who.getStatus();
-        if (isOver() || status == null || status == Status.SONNO) {
+        if (isOver() || status == null || status.countsDownOnSkip()) {
             return;
         }
         if (status.damagePercent() > 0) {
             int damage = who.loseHpPercent(status.damagePercent());
-            String cause = status == Status.VELENO ? " soffre per il veleno: " : " soffre per la bruciatura: ";
-            log.add(message(who.getName() + cause + damage + " danni.", Tone.DANGER));
+            log.add(message(new StatusDamage(who.getName(), status, damage), Tone.DANGER));
             if (isOver()) {
                 return;
             }
         }
         if (who.countDownStatus()) {
-            log.add(message(who.getName() + " " + status.curedText() + ".", Tone.INFO));
+            log.add(message(new StatusCured(who.getName(), status), Tone.INFO));
         }
     }
 
-    private Message message(String text, Tone tone) {
-        return new Message(text, tone, hero.getHp(), enemy.getHp());
+    private Message message(BattleEvent event, Tone tone) {
+        return new Message(narrator.describe(event), tone, hero.getHp(), enemy.getHp());
     }
 
     public boolean isOver() {
@@ -113,10 +115,6 @@ public class Battle {
 
     public boolean heroWon() {
         return hero.isAlive() && !enemy.isAlive();
-    }
-
-    public Hero getHero() {
-        return hero;
     }
 
     public Enemy getEnemy() {

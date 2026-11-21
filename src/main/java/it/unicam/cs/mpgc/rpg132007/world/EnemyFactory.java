@@ -1,6 +1,6 @@
 package it.unicam.cs.mpgc.rpg132007.world;
 
-import it.unicam.cs.mpgc.rpg132007.model.Enemy;
+import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
 
 /** Crea il nemico di uno stage. Altre implementazioni possono leggere i nemici da file, generarli a caso, ecc. */
 public interface EnemyFactory {

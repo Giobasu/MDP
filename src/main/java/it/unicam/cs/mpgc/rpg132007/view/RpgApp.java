@@ -1,6 +1,8 @@
 package it.unicam.cs.mpgc.rpg132007.view;
 
 import it.unicam.cs.mpgc.rpg132007.game.Game;
+import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
+import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
 import it.unicam.cs.mpgc.rpg132007.persistence.PropertiesSaveRepository;
 import it.unicam.cs.mpgc.rpg132007.world.StageEnemyFactory;
 import javafx.application.Application;
@@ -14,11 +16,16 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.Random;
 import java.util.stream.Stream;
 
-/** Avvio dell'applicazione e navigazione tra le schermate (titolo, scelta eroe, battaglia). */
+/**
+ * Avvio dell'applicazione e navigazione tra le schermate (titolo, scelta eroe, battaglia).
+ * È anche l'unico punto in cui si scelgono le implementazioni concrete (nemici, classi, salvataggi).
+ */
 public class RpgApp extends Application {
 
+    private HeroClassCatalog heroClasses;
     private Game game;
     private Scene scene;
     private String monoFont;
@@ -34,13 +41,14 @@ public class RpgApp extends Application {
                 .filter(Font.getFamilies()::contains)
                 .findFirst()
                 .orElse("Monospaced");
-        game = new Game(new StageEnemyFactory(), PropertiesSaveRepository.inUserHome());
+        heroClasses = new HeroClasses();
+        game = new Game(new StageEnemyFactory(), heroClasses, PropertiesSaveRepository.inUserHome(), new Random());
         // la finestra si adatta allo schermo (anche con lo zoom di Windows al 125-150%)
         Rectangle2D screen = Screen.getPrimary().getVisualBounds();
         scene = new Scene(new Region(), Math.min(1100, screen.getWidth() * 0.95), Math.min(800, screen.getHeight() * 0.92));
         scene.getStylesheets().add(RpgApp.class.getResource("style.css").toExternalForm());
         showTitle("");
-        window.setTitle("ASCII Quest");
+        window.setTitle("Asciipon");
         window.setMinWidth(900);
         window.setMinHeight(600);
         window.setScene(scene);
@@ -52,7 +60,7 @@ public class RpgApp extends Application {
     }
 
     private void showHeroSelect() {
-        show(new HeroSelectView((name, heroClass) -> {
+        show(new HeroSelectView(heroClasses.all(), (name, heroClass) -> {
             game.newGame(name, heroClass);
             showBattle();
         }, () -> showTitle("")));
