@@ -14,17 +14,19 @@ import java.util.List;
  * Per aggiungerne uno basta scrivere un nuovo metodo, metterlo in {@link #normal} o {@link #bosses}
  * e mettere il suo sprite .txt accanto a questa classe nelle risorse.
  */
-public final class EnemyTypes {
+public final class EnemyTypes implements EnemyCatalog {
 
     /** I nemici normali, nell'ordine in cui si incontrano. */
     private final List<EnemyType> normal = List.of(spider(), warrior(), archer(), brute(), rider());
     /** I boss, uno ogni {@value StageEnemyFactory#BOSS_EVERY} stage. */
     private final List<EnemyType> bosses = List.of(general());
 
+    @Override
     public List<EnemyType> normal() {
         return normal;
     }
 
+    @Override
     public List<EnemyType> bosses() {
         return bosses;
     }

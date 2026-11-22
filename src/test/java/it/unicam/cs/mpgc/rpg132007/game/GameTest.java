@@ -93,8 +93,8 @@ class GameTest {
         Game game = game(factory, "pp.json");
         game.newGame("Test", CLASSES.byId("lancer").orElseThrow());
         CountDownLatch autoSave = awaitAutoSave(game);
-        Skill skill = game.getHero().getSkills().getFirst();
-        game.getHero().spendPp(skill);
+        Skill skill = game.getHero().getMoveset().getSkills().getFirst();
+        game.getHero().getMoveset().spendPp(skill);
 
         game.playTurn(new Attack());
 
@@ -102,20 +102,20 @@ class GameTest {
             assertTrue(autoSave.await(5, TimeUnit.SECONDS), "il salvataggio automatico deve finire");
         }
         assertTrue(game.getBattle().isOver());
-        assertEquals(expectRestored ? maxPp(skill) : maxPp(skill) - 1, game.getHero().getPp(skill),
+        assertEquals(expectRestored ? maxPp(skill) : maxPp(skill) - 1, game.getHero().getMoveset().getPp(skill),
                 "boss=" + boss + " sconfitta=" + heroLoses);
     }
 
     @Test
     void springRestoresPpAndSkipsAStageButNotTwiceInARow() {
         Game game = newGame();
-        Skill skill = game.getHero().getSkills().getFirst();
-        game.getHero().spendPp(skill);
+        Skill skill = game.getHero().getMoveset().getSkills().getFirst();
+        game.getHero().getMoveset().spendPp(skill);
 
         assertTrue(game.availableRoutes().contains(Route.SPRING));
         assertFalse(game.takeRoute(Route.SPRING).isEmpty(), "la fonte racconta cosa è successo");
 
-        assertEquals(maxPp(skill), game.getHero().getPp(skill));
+        assertEquals(maxPp(skill), game.getHero().getMoveset().getPp(skill));
         assertEquals(2, game.getStage());
         assertFalse(game.availableRoutes().contains(Route.SPRING));
         assertThrows(IllegalStateException.class, () -> game.takeRoute(Route.SPRING));
@@ -136,29 +136,29 @@ class GameTest {
     @Test
     void ppAreSavedAndLoaded() throws IOException {
         Game game = newGame();
-        Skill skill = game.getHero().getSkills().getFirst();
-        game.getHero().spendPp(skill);
-        game.getHero().spendPp(skill);
+        Skill skill = game.getHero().getMoveset().getSkills().getFirst();
+        game.getHero().getMoveset().spendPp(skill);
+        game.getHero().getMoveset().spendPp(skill);
         game.save();
 
         Game loaded = game(new StageEnemyFactory(), "save.json");
         loaded.load();
-        assertEquals(maxPp(skill) - 2, loaded.getHero().getPp(skill));
+        assertEquals(maxPp(skill) - 2, loaded.getHero().getMoveset().getPp(skill));
     }
 
     @Test
     void learnedSkillsAreSavedAndLoaded() throws IOException {
         Game game = newGame();
         game.getHero().gainExp(EXP_TO_LV7);
-        Skill forgotten = game.getHero().getSkills().getFirst();
+        Skill forgotten = game.getHero().getMoveset().getSkills().getFirst();
         List<Message> log = game.learnPendingSkill(forgotten);
         assertFalse(log.isEmpty());
         game.save();
 
         Game loaded = game(new StageEnemyFactory(), "save.json");
         loaded.load();
-        assertEquals(game.getHero().getSkillNames(), loaded.getHero().getSkillNames());
-        assertFalse(loaded.getHero().knows(forgotten));
+        assertEquals(game.getHero().getMoveset().getSkillNames(), loaded.getHero().getMoveset().getSkillNames());
+        assertFalse(loaded.getHero().getMoveset().knows(forgotten));
     }
 
     @Test

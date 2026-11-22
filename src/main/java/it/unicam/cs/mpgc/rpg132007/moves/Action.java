@@ -24,9 +24,9 @@ public interface Action {
         return "";
     }
 
-    /** Categoria mostrata nel menu (FISICO, PERFORANTE, STATO, CURA...). */
-    default String category() {
-        return "FISICO";
+    /** Tipo della mossa (fisica, perforante, di stato, cura...): come mostrarlo lo decide la view. */
+    default Category category() {
+        return Category.PHYSICAL;
     }
 
     /** true se la mossa colpisce l'avversario, false se agisce su chi la usa (cure, potenziamenti). */

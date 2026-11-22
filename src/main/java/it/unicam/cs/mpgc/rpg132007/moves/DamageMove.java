@@ -23,8 +23,8 @@ public record DamageMove(String name, String description, int powerPercent, int 
     }
 
     @Override
-    public String category() {
-        return piercing ? "PERFORANTE" : "FISICO";
+    public Category category() {
+        return piercing ? Category.PIERCING : Category.PHYSICAL;
     }
 
     @Override

@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * Esito di un guadagno di EXP: quanti livelli sono stati saliti, le skill imparate subito
- * e quelle sbloccate ma in attesa di un posto libero (vedi {@link Hero#getPendingSkill()}).
+ * e quelle sbloccate ma in attesa di un posto libero (vedi {@link Moveset#getPendingSkill()}).
  */
 public record LevelUp(int levelsGained, List<Skill> learned, List<Skill> waiting) {
 

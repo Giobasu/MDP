@@ -59,7 +59,7 @@ public final class Skill implements Action {
     }
 
     @Override
-    public String category() {
+    public Category category() {
         return move.category();
     }
 

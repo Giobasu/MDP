@@ -5,37 +5,25 @@ import it.unicam.cs.mpgc.rpg132007.moves.Action;
 import it.unicam.cs.mpgc.rpg132007.moves.Attack;
 import it.unicam.cs.mpgc.rpg132007.moves.Skill;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalInt;
 
 /**
  * L'eroe giocante: la classe scelta decide statistiche, aspetto e skill; cresce con l'EXP.
- * Conosce al massimo {@value #MAX_SKILLS} skill: quelle sbloccate oltre il limite restano in attesa
- * finché il giocatore non ne dimentica una per farle posto (o rinuncia a impararle).
+ * Quali mosse conosce e quanti PP gli restano lo gestisce il suo {@link Moveset}, oro e pozioni il suo {@link Inventory}.
  */
 public class Hero extends Combatant {
 
-    public static final int MAX_SKILLS = 4;
     private static final int STARTING_POTIONS = 3;
     /** Per passare dal livello n al successivo servono EXP_PER_LEVEL * n EXP. */
     private static final int EXP_PER_LEVEL = 20;
 
     private final HeroClass heroClass;
     private final Inventory inventory;
+    private final Moveset moveset;
     private final Action basicAttack = new Attack();
     private final Action potion;
     private int exp;
-    /** PP rimasti per nome della mossa: durano da una battaglia all'altra. */
-    private final Map<String, Integer> pp = new HashMap<>();
-    private final List<Skill> skills = new ArrayList<>();
-    /** Skill sbloccate quando non c'era posto: in ordine di sblocco. */
-    private final Deque<Skill> pending = new ArrayDeque<>();
 
     public Hero(String name, HeroClass heroClass) {
         this(name, heroClass, 1, 0, new Inventory(0, STARTING_POTIONS));
@@ -48,13 +36,9 @@ public class Hero extends Combatant {
         }
         this.heroClass = heroClass;
         this.inventory = inventory;
+        this.moveset = new Moveset(heroClass.skills(), level);
         this.potion = new DrinkPotion(inventory);
         this.exp = exp;
-        // un eroe creato a un certo livello conosce le prime skill sbloccate, fino al limite
-        heroClass.skills().stream()
-                .filter(skill -> skill.unlockLevel() <= level)
-                .limit(MAX_SKILLS)
-                .forEach(skills::add);
     }
 
     public static int expToNextLevel(int level) {
@@ -71,63 +55,21 @@ public class Hero extends Combatant {
             exp -= expToNextLevel(getLevel());
             setLevel(getLevel() + 1);
             setStats(heroClass.statsFor(getLevel()));
-            unlockSkillsOf(getLevel(), learned, waiting);
+            moveset.unlock(skillsUnlockedAt(getLevel()), learned, waiting);
             gained++;
         }
         return new LevelUp(gained, learned, waiting);
     }
 
-    /** Le skill che si sbloccano a questo livello: imparate subito se c'è posto, altrimenti in attesa. */
-    private void unlockSkillsOf(int level, List<Skill> learned, List<Skill> waiting) {
-        for (Skill skill : heroClass.skills()) {
-            if (skill.unlockLevel() == level) {
-                if (skills.size() < MAX_SKILLS) {
-                    skills.add(skill);
-                    learned.add(skill);
-                } else {
-                    pending.add(skill);
-                    waiting.add(skill);
-                }
-            }
-        }
-    }
-
-    /** Skill conosciute, nell'ordine del menu. */
-    public List<Skill> getSkills() {
-        return List.copyOf(skills);
-    }
-
-    public boolean knows(Skill skill) {
-        return skills.contains(skill);
-    }
-
-    /** La prossima skill che vuole imparare ma per cui non c'è posto, se c'è. */
-    public Optional<Skill> getPendingSkill() {
-        return Optional.ofNullable(pending.peek());
-    }
-
-    /** Impara la skill in attesa al posto di una conosciuta, che si dimentica (insieme ai suoi PP). */
-    public void learnPendingSkill(Skill forgotten) {
-        int slot = skills.indexOf(forgotten);
-        if (pending.isEmpty() || slot < 0) {
-            throw new IllegalStateException("Nessuna skill in attesa o skill da dimenticare non conosciuta");
-        }
-        skills.set(slot, pending.poll());
-        pp.remove(forgotten.name());
-    }
-
-    /** Rinuncia alla skill in attesa: non si potrà più imparare. */
-    public void skipPendingSkill() {
-        if (pending.poll() == null) {
-            throw new IllegalStateException("Nessuna skill in attesa");
-        }
+    private List<Skill> skillsUnlockedAt(int level) {
+        return heroClass.skills().stream().filter(skill -> skill.unlockLevel() == level).toList();
     }
 
     /** Mosse del menu LOTTA: l'attacco base più le skill conosciute. */
     public List<Action> getMoves() {
         List<Action> moves = new ArrayList<>();
         moves.add(basicAttack);
-        moves.addAll(getSkills());
+        moves.addAll(moveset.getSkills());
         return List.copyOf(moves);
     }
 
@@ -138,64 +80,11 @@ public class Hero extends Combatant {
 
     /** PP sufficienti e azione disponibile (es. pozioni rimaste). */
     public boolean canUse(Action action) {
-        boolean hasPp = action.maxPp().isEmpty() || getPp(action) > 0;
-        return hasPp && action.isUsableBy(this);
+        return moveset.hasPp(action) && action.isUsableBy(this);
     }
 
-    /** PP rimasti; una mossa mai usata li ha tutti. 0 per le mosse senza PP. */
-    public int getPp(Action action) {
-        return pp.getOrDefault(action.name(), action.maxPp().orElse(0));
-    }
-
-    /** Scala un PP se l'azione ha PP limitati. */
-    public void spendPp(Action action) {
-        if (action.maxPp().isPresent()) {
-            pp.put(action.name(), Math.max(0, getPp(action) - 1));
-        }
-    }
-
-    /** Ricarica tutti i PP (dopo un boss, dopo una sconfitta, alla fonte). */
-    public void restorePp() {
-        pp.clear();
-    }
-
-    /** PP delle sole mosse già usate (le altre sono al massimo): è ciò che finisce nel salvataggio. */
-    public Map<String, Integer> getUsedPp() {
-        return Map.copyOf(pp);
-    }
-
-    /** Nomi delle skill conosciute: è ciò che finisce nel salvataggio. */
-    public List<String> getSkillNames() {
-        return skills.stream().map(Skill::name).toList();
-    }
-
-    /**
-     * Ripristina le skill conosciute lette da un salvataggio. Si ignorano i nomi sconosciuti o non ancora sbloccati;
-     * se non ne resta nessuna (es. tutte rinominate) si tengono quelle di base.
-     */
-    public void loadSkills(List<String> names) {
-        List<Skill> loaded = names.stream()
-                .flatMap(name -> heroClass.skills().stream().filter(s -> s.name().equals(name)))
-                .filter(skill -> skill.unlockLevel() <= getLevel())
-                .distinct()
-                .limit(MAX_SKILLS)
-                .toList();
-        if (!loaded.isEmpty()) {
-            skills.clear();
-            skills.addAll(loaded);
-        }
-    }
-
-    /** Ripristina i PP letti da un salvataggio; i nomi di mosse che non esistono più vengono ignorati. */
-    public void loadPp(Map<String, Integer> saved) {
-        pp.clear();
-        for (Skill skill : heroClass.skills()) {
-            Integer left = saved.get(skill.name());
-            OptionalInt max = skill.maxPp();
-            if (left != null && max.isPresent()) {
-                pp.put(skill.name(), Math.clamp(left, 0, max.getAsInt()));
-            }
-        }
+    public Moveset getMoveset() {
+        return moveset;
     }
 
     public HeroClass getHeroClass() {

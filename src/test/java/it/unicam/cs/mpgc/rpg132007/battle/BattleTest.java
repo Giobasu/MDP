@@ -89,14 +89,14 @@ class BattleTest {
     @Test
     void skillsSpendPpAndAreRejectedWhenEmpty() {
         Hero hero = warrior();
-        Skill skill = hero.getSkills().getFirst();
+        Skill skill = hero.getMoveset().getSkills().getFirst();
         int maxPp = skill.maxPp().getAsInt();
         Battle battle = battle(hero, enemy(100_000, 0, 0));
 
         for (int i = 0; i < maxPp; i++) {
             battle.playTurn(skill);
         }
-        assertEquals(0, hero.getPp(skill));
+        assertEquals(0, hero.getMoveset().getPp(skill));
         int hp = battle.getEnemy().getHp();
         List<Message> log = battle.playTurn(skill);
 
@@ -106,9 +106,9 @@ class BattleTest {
         assertTrue(new Attack().maxPp().isEmpty());
 
         hero.restore();
-        assertEquals(0, hero.getPp(skill), "i PP non si ricaricano a inizio battaglia");
-        hero.restorePp();
-        assertEquals(maxPp, hero.getPp(skill));
+        assertEquals(0, hero.getMoveset().getPp(skill), "i PP non si ricaricano a inizio battaglia");
+        hero.getMoveset().restorePp();
+        assertEquals(maxPp, hero.getMoveset().getPp(skill));
     }
 
     @Test
@@ -150,7 +150,7 @@ class BattleTest {
     @Test
     void statStagesChangeDamageAndAreClamped() {
         Hero hero = warrior();
-        StatusMove rage = new StatusMove("Furia", "STATO", false, "", Effect.raise(Stat.ATTACK, 2));
+        StatusMove rage = new StatusMove("Furia", false, "", Effect.raise(Stat.ATTACK, 2));
 
         rage.execute(hero, enemy(100, 0, 0), MoveContext.NORMAL);
         assertEquals(11 * 6 / 4, hero.getAttack());
@@ -179,7 +179,7 @@ class BattleTest {
         new DamageMove("Veleno", "", 0, 1, true, Effect.inflict(Status.POISON, 2)).execute(hero, enemy, MoveContext.NORMAL);
         int afterHit = enemy.getHp();
 
-        Action wait = new StatusMove("Attesa", "STATO", false, "", Effect.NONE);
+        Action wait = new StatusMove("Attesa", false, "", Effect.NONE);
         battle.playTurn(wait);
         battle.playTurn(wait);
         battle.playTurn(wait);
