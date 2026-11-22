@@ -10,6 +10,7 @@ import it.unicam.cs.mpgc.rpg132007.heroes.HeroClass;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
 import it.unicam.cs.mpgc.rpg132007.model.Combatant;
+import it.unicam.cs.mpgc.rpg132007.narration.ItalianNarrator;
 import it.unicam.cs.mpgc.rpg132007.persistence.SaveData;
 import it.unicam.cs.mpgc.rpg132007.persistence.SaveRepository;
 import it.unicam.cs.mpgc.rpg132007.world.StageEnemyFactory;
@@ -69,7 +70,7 @@ class BalanceTest {
     }
 
     private static Result play(HeroClass heroClass) {
-        Game game = new Game(new StageEnemyFactory(), CLASSES, NO_SAVES, new Random(42));
+        Game game = new Game(new StageEnemyFactory(), CLASSES, NO_SAVES, new ItalianNarrator(), new Random(42));
         game.newGame("Sim", heroClass);
         int defeats = 0;
         int turns = 0;

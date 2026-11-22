@@ -26,11 +26,19 @@ public class StageEnemyFactory implements EnemyFactory {
     private static final int ATK_BASE = 10;
     private static final double ATK_PER_STAGE = 3.0;
     private static final int DEF_BASE = 2;
-    private static final int DEF_PER_STAGE = 3; // ogni 2 stage
+    private static final int DEF_PER_TWO_STAGES = 3;
     private static final double BOSS_HP = 1.4;
     private static final double BOSS_ATTACK = 1.0;
     private static final double ELITE_HP = 1.35;
     private static final double ELITE_ATTACK = 1.2;
+    private static final int EXP_BASE = 12;
+    private static final int EXP_PER_STAGE = 6;
+    private static final int GOLD_BASE = 8;
+    private static final int GOLD_PER_STAGE = 4;
+    /** Élite e boss danno EXP doppia; l'élite anche oro doppio. */
+    private static final int BONUS_REWARD = 2;
+    /** I boss danno il triplo dell'oro. */
+    private static final int BOSS_GOLD = 3;
 
     /** Un modello di nemico: aspetto, moltiplicatori delle statistiche e mossa speciale (usata ogni specialEvery turni). */
     private record Template(String name, Appearance look, double hpMultiplier, double attackMultiplier,
@@ -55,12 +63,12 @@ public class StageEnemyFactory implements EnemyFactory {
 
     private static Template spider() {
         return enemy("Zigoton Ragno", "#cc3333", "spider.txt", 1.0, 1.0,
-                move("Morso Velenoso", 80, 1, false, Effect.inflict(Status.VELENO, 3)), 3);
+                move("Morso Velenoso", 80, 1, false, Effect.inflict(Status.POISON, 3)), 3);
     }
 
     private static Template warrior() {
         return enemy("Zigoton Guerriero", "#d0d0d0", "warrior.txt", 1.1, 1.0,
-                move("Fendente", 75, 2, false, Effect.NONE), 2);
+                move("Doppio Taglio", 75, 2, false, Effect.NONE), 2);
     }
 
     private static Template archer() {
@@ -113,9 +121,10 @@ public class StageEnemyFactory implements EnemyFactory {
         Stats stats = new Stats(
                 (int) ((HP_BASE + HP_PER_STAGE * stage) * t.hpMultiplier() * hpBoost),
                 (int) ((ATK_BASE + ATK_PER_STAGE * stage) * t.attackMultiplier() * attackBoost),
-                DEF_BASE + DEF_PER_STAGE * stage / 2);
-        int rewardBoost = boss || elite ? 2 : 1;
-        Reward reward = new Reward((12 + 6 * stage) * rewardBoost, (8 + 4 * stage) * (boss ? 3 : rewardBoost));
+                DEF_BASE + DEF_PER_TWO_STAGES * stage / 2);
+        int rewardBoost = boss || elite ? BONUS_REWARD : 1;
+        Reward reward = new Reward((EXP_BASE + EXP_PER_STAGE * stage) * rewardBoost,
+                (GOLD_BASE + GOLD_PER_STAGE * stage) * (boss ? BOSS_GOLD : rewardBoost));
         String name = boss ? t.name() + " (BOSS)" : elite ? t.name() + " Élite" : t.name();
         return new Enemy(name, stage, stats, t.look(), reward, t.special(), t.specialEvery(), boss);
     }

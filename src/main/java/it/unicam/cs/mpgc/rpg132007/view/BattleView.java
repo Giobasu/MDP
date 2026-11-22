@@ -196,7 +196,7 @@ class BattleView extends BorderPane {
         List<Message> intro = new ArrayList<>();
         intro.add(enemy.isBoss()
                 ? new Message("Un boss sbarra la strada: " + enemy.getName() + "!", Tone.DANGER)
-                : new Message("Stage " + enemy.getLevel() + ": appare " + enemy.getName() + "!", Tone.INFO));
+                : new Message("Stage " + game.getStage() + ": appare " + enemy.getName() + "!", Tone.INFO));
         intro.add(new Message("Avanti, " + hero.getName() + "!", Tone.HERO));
         showMessages(intro, this::showMainMenu);
     }
@@ -233,19 +233,29 @@ class BattleView extends BorderPane {
         return entries;
     }
 
+    private static Label detailTitle(String text) {
+        Label title = new Label(text);
+        title.getStyleClass().add("detail-type");
+        return title;
+    }
+
+    private static Label detailText(String text) {
+        Label description = new Label(text);
+        description.getStyleClass().add("detail-text");
+        description.setWrapText(true);
+        return description;
+    }
+
     /** Riquadro a destra mentre si sceglie una mossa: PP rimasti, categoria e descrizione. */
     private void showDetails(Action move) {
         Hero hero = game.getHero();
-        Label category = new Label(move.category());
-        category.getStyleClass().add("detail-type");
+        Label category = detailTitle(move.category());
         String ppText = move.maxPp().isPresent()
                 ? String.format("PP   %d / %d", hero.getPp(move), move.maxPp().getAsInt())
                 : "PP   --";
         Label ppLine = new Label(ppText);
         ppLine.getStyleClass().add(hero.canUse(move) ? "detail-ok" : "detail-ko");
-        Label description = new Label(move.description());
-        description.getStyleClass().add("detail-text");
-        description.setWrapText(true);
+        Label description = detailText(move.description());
         Label back = new Label("[X / Esc] indietro");
         back.getStyleClass().add("hint");
         back.setOnMouseClicked(e -> goBack());
@@ -311,14 +321,9 @@ class BattleView extends BorderPane {
     private void showRoutes() {
         List<MenuGrid.Entry> entries = new ArrayList<>();
         for (Route route : game.availableRoutes()) {
-            entries.add(new MenuGrid.Entry(route.label(), true, () -> takeRoute(route), () -> {
-                Label title = new Label("Il sentiero si divide...");
-                title.getStyleClass().add("detail-type");
-                Label description = new Label(route.description());
-                description.getStyleClass().add("detail-text");
-                description.setWrapText(true);
-                sideBox.getChildren().setAll(new VBox(8, title, description));
-            }));
+            entries.add(new MenuGrid.Entry(Labels.route(route), true, () -> takeRoute(route), () ->
+                    sideBox.getChildren().setAll(new VBox(8,
+                            detailTitle("Il sentiero si divide..."), detailText(Labels.routeDescription(route))))));
         }
         showMenu(mainBox, new MenuGrid(entries, 1, 0), this::showAfterBattleMenu);
     }
@@ -451,8 +456,8 @@ class BattleView extends BorderPane {
         Enemy enemy = game.getBattle().getEnemy();
         Inventory inv = hero.getInventory();
 
-        // dopo una vittoria (o una fonte) mostra già lo stage verso cui si va
-        int stage = game.getBattle().heroWon() ? game.getStage() : enemy.getLevel();
+        // dopo una vittoria (o una fonte) Game è già passato allo stage verso cui si va
+        int stage = game.getStage();
         boolean bossFight = enemy.isBoss() && !game.getBattle().isOver();
         stageLabel.setText(bossFight ? "STAGE " + stage + "   !! BOSS !!" : "STAGE " + stage);
         stageLabel.getStyleClass().setAll("label", "stage");
@@ -472,9 +477,12 @@ class BattleView extends BorderPane {
 
     /** All'apertura di ogni messaggio: animazione della mossa e barre HP portate al valore del messaggio. */
     private void animate(Message message) {
-        Message.Fx fx = message.fx();
-        if (fx != null) {
-            BattleAnimations.move(fx, fx.onEnemySide() ? enemyStage : heroStage, fx.fromHero() ? heroSprite : enemySprite);
+        Message.MoveUse move = message.move();
+        if (move != null) {
+            // la mossa appare sul lato del nemico se è l'eroe che attacca o il nemico che si potenzia
+            boolean onEnemySide = move.byHero() == move.targetsOpponent();
+            BattleAnimations.move(move.byHero(), !move.targetsOpponent(),
+                    onEnemySide ? enemyStage : heroStage, move.byHero() ? heroSprite : enemySprite);
         }
         if (message.hasHp()) {
             animateHp(message.heroHp(), message.enemyHp());

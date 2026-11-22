@@ -1,19 +1,18 @@
 package it.unicam.cs.mpgc.rpg132007.action;
 
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.Healed;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.MoveUsed;
 import it.unicam.cs.mpgc.rpg132007.model.Combatant;
 import it.unicam.cs.mpgc.rpg132007.model.Inventory;
 
 import java.util.List;
 
-/** Bere una pozione: consuma il turno, cura metà degli HP massimi. */
+/** Bere una pozione: consuma una pozione dell'inventario e il turno; la cura vera e propria è una {@link HealMove}. */
 public class DrinkPotion implements Action {
 
     public static final int HEAL_PERCENT = 50;
 
     private final Inventory inventory;
+    private final HealMove heal = new HealMove("Pozione", HEAL_PERCENT);
 
     public DrinkPotion(Inventory inventory) {
         this.inventory = inventory;
@@ -21,7 +20,7 @@ public class DrinkPotion implements Action {
 
     @Override
     public String name() {
-        return "Pozione";
+        return heal.name();
     }
 
     @Override
@@ -31,7 +30,7 @@ public class DrinkPotion implements Action {
 
     @Override
     public String description() {
-        return "Recupera il " + HEAL_PERCENT + "% degli HP massimi. Consuma il turno.";
+        return heal.description() + " Consuma il turno.";
     }
 
     @Override
@@ -41,12 +40,12 @@ public class DrinkPotion implements Action {
 
     @Override
     public boolean targetsEnemy() {
-        return false;
+        return heal.targetsEnemy();
     }
 
     @Override
     public boolean isUsableBy(Combatant user) {
-        return inventory.getPotions() > 0 && user.getHp() < user.getMaxHp();
+        return inventory.getPotions() > 0 && heal.isUsableBy(user);
     }
 
     @Override
@@ -54,7 +53,6 @@ public class DrinkPotion implements Action {
         if (!inventory.usePotion()) {
             throw new IllegalStateException("Nessuna pozione: controllare isUsableBy prima di usarla");
         }
-        int healed = user.heal(user.getMaxHp() * HEAL_PERCENT / 100);
-        return List.of(new MoveUsed(user.getName(), name()), new Healed(user.getName(), healed));
+        return heal.execute(user, target, context);
     }
 }

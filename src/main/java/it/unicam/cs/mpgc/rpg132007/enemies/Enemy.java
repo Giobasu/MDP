@@ -50,6 +50,6 @@ public class Enemy extends Combatant {
     /** I boss non si possono addormentare, altrimenti basterebbe una mossa per bloccarli. */
     @Override
     protected boolean isImmuneTo(Status s) {
-        return boss && s == Status.SONNO;
+        return boss && s == Status.SLEEP;
     }
 }

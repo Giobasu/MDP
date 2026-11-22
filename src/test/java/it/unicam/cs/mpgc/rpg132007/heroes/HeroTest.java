@@ -21,9 +21,11 @@ class HeroTest {
         Hero hero = new Hero("Test", WARRIOR);
         assertEquals(1, hero.getSkills().size(), "al Lv1 si ha già la prima abilità");
 
-        int gained = hero.gainExp(20 + 40 + 5); // Lv1 -> Lv3, avanzano 5 EXP
+        LevelUp levelUp = hero.gainExp(20 + 40 + 5); // Lv1 -> Lv3, avanzano 5 EXP
 
-        assertEquals(2, gained);
+        assertEquals(2, levelUp.levelsGained());
+        assertEquals(List.of("Muro di Scudi", "Colpo di Scudo"), levelUp.learned().stream().map(Skill::name).toList());
+        assertEquals(List.of(), levelUp.waiting());
         assertEquals(3, hero.getLevel());
         assertEquals(5, hero.getExp());
         assertEquals(WARRIOR.statsFor(3).attack(), hero.getAttack());

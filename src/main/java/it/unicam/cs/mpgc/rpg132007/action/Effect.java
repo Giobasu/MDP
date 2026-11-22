@@ -2,7 +2,6 @@ package it.unicam.cs.mpgc.rpg132007.action;
 
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent;
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.Drained;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.Healed;
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatChanged;
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatusInflicted;
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatusResisted;
@@ -14,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Effetto secondario di una mossa (potenziamenti, veleno, risucchio...).
+ * Effetto secondario di una mossa (potenziamenti, indebolimenti, stati alterati, risucchio).
  * Si combinano con {@link #and}: una mossa nuova si scrive senza creare nuove classi.
  */
 @FunctionalInterface
@@ -69,10 +68,5 @@ public interface Effect {
             }
             return List.of(new Drained(user.getName(), healed));
         };
-    }
-
-    static Effect heal(int percentOfMaxHp) {
-        return (user, target, damage) ->
-                List.of(new Healed(user.getName(), user.heal(user.getMaxHp() * percentOfMaxHp / 100)));
     }
 }

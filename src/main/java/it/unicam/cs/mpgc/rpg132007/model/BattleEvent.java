@@ -16,7 +16,6 @@ public sealed interface BattleEvent {
     record Damaged(String target, int amount, int hits, boolean critical) implements BattleEvent {
     }
 
-    /** amount 0 = gli HP erano già al massimo. */
     record Healed(String who, int amount) implements BattleEvent {
     }
 

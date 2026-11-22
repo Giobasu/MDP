@@ -7,6 +7,7 @@ import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
 import it.unicam.cs.mpgc.rpg132007.model.Appearance;
+import it.unicam.cs.mpgc.rpg132007.narration.ItalianNarrator;
 import it.unicam.cs.mpgc.rpg132007.model.Reward;
 import it.unicam.cs.mpgc.rpg132007.model.Stats;
 import it.unicam.cs.mpgc.rpg132007.persistence.JsonSaveRepository;
@@ -37,7 +38,7 @@ class GameTest {
     Path dir;
 
     private Game game(EnemyFactory enemies, String saveFile) {
-        return new Game(enemies, CLASSES, new JsonSaveRepository(dir.resolve(saveFile)), new Random(1));
+        return new Game(enemies, CLASSES, new JsonSaveRepository(dir.resolve(saveFile)), new ItalianNarrator(), new Random(1));
     }
 
     private Game newGame() {
@@ -213,7 +214,8 @@ class GameTest {
         Game game = newGame();
         game.save();
         HeroClassCatalog empty = List::of;
-        Game other = new Game(new StageEnemyFactory(), empty, new JsonSaveRepository(dir.resolve("save.json")), new Random(1));
+        Game other = new Game(new StageEnemyFactory(), empty, new JsonSaveRepository(dir.resolve("save.json")),
+                new ItalianNarrator(), new Random(1));
         assertThrows(IOException.class, other::load, "con un catalogo vuoto la classe salvata non esiste");
     }
 

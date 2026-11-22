@@ -1,6 +1,5 @@
 package it.unicam.cs.mpgc.rpg132007.view;
 
-import it.unicam.cs.mpgc.rpg132007.battle.Message;
 import javafx.animation.FadeTransition;
 import javafx.animation.KeyFrame;
 import javafx.animation.ParallelTransition;
@@ -64,19 +63,22 @@ final class BattleAnimations {
         anim.play();
     }
 
-    /** Animazione della mossa: chi attacca fa uno slancio, sul bersaglio compaiono i fotogrammi. */
-    static void move(Message.Fx fx, StackPane target, Node attacker) {
-        if (!fx.support()) {
+    /**
+     * Animazione della mossa: chi attacca fa uno slancio, sul bersaglio compaiono i fotogrammi.
+     * support = cura o potenziamento (scintille, nessuno slancio) invece di un colpo.
+     */
+    static void move(boolean fromHero, boolean support, StackPane target, Node attacker) {
+        if (!support) {
             TranslateTransition lunge = new TranslateTransition(Duration.millis(110), attacker);
-            lunge.setByX(fx.fromHero() ? 30 : -30);
+            lunge.setByX(fromHero ? 30 : -30);
             lunge.setAutoReverse(true);
             lunge.setCycleCount(2);
             lunge.play();
         }
-        String[] frames = fx.support() ? SUPPORT_FRAMES : HIT_FRAMES;
+        String[] frames = support ? SUPPORT_FRAMES : HIT_FRAMES;
         Label overlay = new Label();
         overlay.setMouseTransparent(true);
-        overlay.getStyleClass().addAll("fx", fx.support() ? "fx-support" : "fx-hit");
+        overlay.getStyleClass().addAll("fx", support ? "fx-support" : "fx-hit");
         StackPane.setAlignment(overlay, Pos.CENTER);
         target.getChildren().add(overlay);
         Timeline anim = new Timeline();

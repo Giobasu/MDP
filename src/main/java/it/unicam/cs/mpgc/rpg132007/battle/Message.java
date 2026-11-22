@@ -4,17 +4,14 @@ package it.unicam.cs.mpgc.rpg132007.battle;
  * Una riga del log di gioco. Il tono dice alla view come evidenziarla, senza che il gioco conosca i colori.
  * heroHp ed enemyHp sono gli HP subito dopo l'evento (-1 se il messaggio non riguarda la battaglia):
  * la view li usa per animare le barre un messaggio alla volta, anche se il turno è già stato calcolato tutto.
- * fx (facoltativo) descrive l'animazione della mossa che il messaggio annuncia.
+ * move (facoltativo) dice chi ha usato la mossa che il messaggio annuncia e su chi: come animarla lo decide la view.
  */
-public record Message(String text, Tone tone, int heroHp, int enemyHp, Fx fx) {
+public record Message(String text, Tone tone, int heroHp, int enemyHp, MoveUse move) {
 
     public enum Tone { HERO, ENEMY, INFO, REWARD, DANGER }
 
-    /**
-     * Animazione di una mossa: dove compare (lato nemico o lato eroe) e se è un aiuto (cura, potenziamento)
-     * invece di un colpo. fromHero dice chi la usa, per lo slancio.
-     */
-    public record Fx(boolean onEnemySide, boolean fromHero, boolean support) {
+    /** Chi ha usato la mossa (byHero) e se agisce sull'avversario (false = cura o potenziamento su di sé). */
+    public record MoveUse(boolean byHero, boolean targetsOpponent) {
     }
 
     public static final int NO_HP = -1;

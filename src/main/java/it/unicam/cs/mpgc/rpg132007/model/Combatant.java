@@ -12,6 +12,8 @@ public abstract class Combatant {
     /** Con difesa pari a DEFENSE_SCALE il danno si dimezza. */
     public static final int DEFENSE_SCALE = 40;
     public static final int MAX_STAGE = 6;
+    /** Ogni livello di modificatore vale 1/STAGE_DIVISOR della statistica (4 = 25%). */
+    private static final int STAGE_DIVISOR = 4;
 
     private final String name;
     private final Appearance appearance;
@@ -63,7 +65,9 @@ public abstract class Combatant {
     /** Ogni livello positivo vale +25% (+6 = x2.5); quelli negativi dividono allo stesso modo (-1 = x0.8, -6 = x0.4). */
     private int withStage(int value, Stat stat) {
         int stage = getStage(stat);
-        return stage >= 0 ? value * (4 + stage) / 4 : value * 4 / (4 - stage);
+        return stage >= 0
+                ? value * (STAGE_DIVISOR + stage) / STAGE_DIVISOR
+                : value * STAGE_DIVISOR / (STAGE_DIVISOR - stage);
     }
 
     /**

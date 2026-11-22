@@ -60,13 +60,13 @@ class InfoBox extends VBox {
             getStyleClass().add("boss");
         }
         Status s = c.getStatus();
-        chip(status, s == null ? null : s.label(), s == null ? "" : "st-" + s.name().toLowerCase());
+        chip(status, s == null ? null : Labels.status(s), s == null ? "" : "st-" + s.name().toLowerCase());
 
         StringBuilder tags = new StringBuilder();
         for (Stat stat : Stat.values()) {
             int stage = c.getStage(stat);
             if (stage != 0) {
-                tags.append(stat.shortName()).append(stage > 0 ? "▲" : "▼").append(Math.abs(stage)).append("  ");
+                tags.append(Labels.stat(stat)).append(stage > 0 ? "▲" : "▼").append(Math.abs(stage)).append("  ");
             }
         }
         stages.setText(tags.toString().strip());

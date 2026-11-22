@@ -269,10 +269,10 @@
 
 .info-box .chip, .textbox .chip { -fx-text-fill: #ffffff; }
 
-.st-veleno     { -fx-background-color: #9c4dcc; }
-.st-bruciatura { -fx-background-color: #e8613c; }
-.st-paralisi   { -fx-background-color: #d4a514; }
-.st-sonno      { -fx-background-color: #6d7a8c; }
+.st-poison     { -fx-background-color: #9c4dcc; }
+.st-burn       { -fx-background-color: #e8613c; }
+.st-paralysis  { -fx-background-color: #d4a514; }
+.st-sleep      { -fx-background-color: #6d7a8c; }
 
 /* ---------- animazioni delle mosse ---------- */
 .fx {

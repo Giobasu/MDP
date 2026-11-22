@@ -25,6 +25,8 @@ public class Hero extends Combatant {
 
     public static final int MAX_SKILLS = 4;
     private static final int STARTING_POTIONS = 3;
+    /** Per passare dal livello n al successivo servono EXP_PER_LEVEL * n EXP. */
+    private static final int EXP_PER_LEVEL = 20;
 
     private final HeroClass heroClass;
     private final Inventory inventory;
@@ -58,31 +60,35 @@ public class Hero extends Combatant {
     }
 
     public static int expToNextLevel(int level) {
-        return 20 * level;
+        return EXP_PER_LEVEL * level;
     }
 
-    /** Aggiunge EXP e applica i level up. Ritorna quanti livelli sono stati guadagnati. */
-    public int gainExp(int amount) {
+    /** Aggiunge EXP e applica i level up. Ritorna livelli guadagnati e skill sbloccate (imparate o in attesa). */
+    public LevelUp gainExp(int amount) {
         exp += amount;
         int gained = 0;
+        List<Skill> learned = new ArrayList<>();
+        List<Skill> waiting = new ArrayList<>();
         while (exp >= expToNextLevel(getLevel())) {
             exp -= expToNextLevel(getLevel());
             setLevel(getLevel() + 1);
             setStats(heroClass.statsFor(getLevel()));
-            unlockSkillsOf(getLevel());
+            unlockSkillsOf(getLevel(), learned, waiting);
             gained++;
         }
-        return gained;
+        return new LevelUp(gained, learned, waiting);
     }
 
     /** Le skill che si sbloccano a questo livello: imparate subito se c'è posto, altrimenti in attesa. */
-    private void unlockSkillsOf(int level) {
+    private void unlockSkillsOf(int level, List<Skill> learned, List<Skill> waiting) {
         for (Skill skill : heroClass.skills()) {
             if (skill.unlockLevel() == level) {
                 if (skills.size() < MAX_SKILLS) {
                     skills.add(skill);
+                    learned.add(skill);
                 } else {
                     pending.add(skill);
+                    waiting.add(skill);
                 }
             }
         }

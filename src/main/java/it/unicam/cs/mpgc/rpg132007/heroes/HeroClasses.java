@@ -2,6 +2,7 @@ package it.unicam.cs.mpgc.rpg132007.heroes;
 
 import it.unicam.cs.mpgc.rpg132007.action.DamageMove;
 import it.unicam.cs.mpgc.rpg132007.action.Effect;
+import it.unicam.cs.mpgc.rpg132007.action.HealMove;
 import it.unicam.cs.mpgc.rpg132007.action.Skill;
 import it.unicam.cs.mpgc.rpg132007.action.StatusMove;
 import it.unicam.cs.mpgc.rpg132007.model.Appearance;
@@ -39,15 +40,14 @@ public final class HeroClasses implements HeroClassCatalog {
                         self("Muro di Scudi", 2, 8, "STATO",
                                 "Alza molto la tua DIFESA.", Effect.raise(DEFENSE, 2)),
                         damage("Colpo di Scudo", 3, 10, 90, 1, false,
-                                "Stordisce: il nemico resta PARALIZZATO per 3 turni.", Effect.inflict(PARALISI, 3)),
-                        self("Secondo Respiro", 5, 5, "CURA",
-                                "Recupera il 35% degli HP massimi.", Effect.heal(35)),
+                                "Stordisce: il nemico resta PARALIZZATO per 3 turni.", Effect.inflict(PARALYSIS, 3)),
+                        heal("Secondo Respiro", 5, 5, 35),
                         self("Grido di Guerra", 7, 8, "STATO",
                                 "Alza molto il tuo ATTACCO.", Effect.raise(ATTACK, 2)),
                         damage("Spada Sacra", 9, 8, 140, 1, true,
                                 "Luce che ignora la difesa e la abbassa.", Effect.lower(DEFENSE, 1)),
                         damage("Colpo Devastante", 12, 5, 260, 1, false,
-                                "Lama infuocata: BRUCIA il nemico.", Effect.inflict(BRUCIATURA, 3))));
+                                "Lama infuocata: BRUCIA il nemico.", Effect.inflict(BURN, 3))));
     }
 
     private static HeroClass archer() {
@@ -59,13 +59,12 @@ public final class HeroClasses implements HeroClassCatalog {
                         damage("Doppio Tiro", 1, 15, 75, 2, false,
                                 "Due frecce in rapida successione.", Effect.NONE),
                         damage("Freccia Avvelenata", 2, 10, 70, 1, false,
-                                "AVVELENA il nemico per 4 turni.", Effect.inflict(VELENO, 4)),
+                                "AVVELENA il nemico per 4 turni.", Effect.inflict(POISON, 4)),
                         foe("Dardo Soporifero", 3, 5, "STATO",
-                                "ADDORMENTA il nemico per 2 turni. Non funziona sui boss.", Effect.inflict(SONNO, 2)),
+                                "ADDORMENTA il nemico per 2 turni. Non funziona sui boss.", Effect.inflict(SLEEP, 2)),
                         damage("Freccia di Luce", 5, 8, 160, 1, true,
                                 "Ignora completamente la difesa.", Effect.NONE),
-                        self("Erbe Mediche", 7, 5, "CURA",
-                                "Recupera il 30% degli HP massimi.", Effect.heal(30)),
+                        heal("Erbe Mediche", 7, 5, 30),
                         damage("Tiro Spezzacorazza", 9, 8, 90, 1, false,
                                 "Abbassa molto la DIFESA nemica.", Effect.lower(DEFENSE, 2)),
                         damage("Pioggia di Frecce", 12, 5, 60, 5, false,
@@ -81,14 +80,14 @@ public final class HeroClasses implements HeroClassCatalog {
                         damage("Affondo", 1, 15, 100, 1, true,
                                 "Un colpo di punta che ignora la difesa.", Effect.NONE),
                         damage("Squarcio", 2, 10, 80, 1, false,
-                                "Ferita profonda: il nemico sanguina (VELENO) per 4 turni.", Effect.inflict(VELENO, 4)),
+                                "Ferita profonda: il nemico sanguina (POISON) per 4 turni.", Effect.inflict(POISON, 4)),
                         self("Concentrazione", 3, 8, "STATO",
                                 "Alza il tuo ATTACCO e la tua DIFESA.",
                                 Effect.raise(ATTACK, 1).and(Effect.raise(DEFENSE, 1))),
                         damage("Lancia Vampira", 5, 8, 110, 1, false,
                                 "Assorbe metà dei danni inflitti.", Effect.drain(50)),
                         damage("Giavellotto Infuocato", 7, 8, 150, 1, false,
-                                "Un lancio in fiamme che BRUCIA il nemico.", Effect.inflict(BRUCIATURA, 3)),
+                                "Un lancio in fiamme che BRUCIA il nemico.", Effect.inflict(BURN, 3)),
                         damage("Infilzata", 9, 8, 60, 3, true,
                                 "Tre affondi rapidi che ignorano la difesa.", Effect.NONE),
                         damage("Lancia Celeste", 12, 5, 200, 1, true,
@@ -100,7 +99,12 @@ public final class HeroClasses implements HeroClassCatalog {
         return new Skill(new DamageMove(name, description, power, hits, piercing, effect), level, pp);
     }
 
-    /** Mossa di stato su se stessi (cure, potenziamenti). */
+    /** Cura di una % degli HP massimi (non usabile con gli HP già al massimo). */
+    private static Skill heal(String name, int level, int pp, int percentOfMaxHp) {
+        return new Skill(new HealMove(name, percentOfMaxHp), level, pp);
+    }
+
+    /** Mossa di stato su se stessi (potenziamenti). */
     private static Skill self(String name, int level, int pp, String category, String description, Effect effect) {
         return new Skill(new StatusMove(name, category, false, description, effect), level, pp);
     }

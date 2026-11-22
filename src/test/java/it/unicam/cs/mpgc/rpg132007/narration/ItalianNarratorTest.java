@@ -1,9 +1,15 @@
-package it.unicam.cs.mpgc.rpg132007.battle;
+package it.unicam.cs.mpgc.rpg132007.narration;
 
+import it.unicam.cs.mpgc.rpg132007.game.GameEvent.LevelReached;
+import it.unicam.cs.mpgc.rpg132007.game.GameEvent.PpRefill;
+import it.unicam.cs.mpgc.rpg132007.game.GameEvent.PpRestored;
+import it.unicam.cs.mpgc.rpg132007.game.GameEvent.SkillWaiting;
+import it.unicam.cs.mpgc.rpg132007.game.GameNarrator;
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.Damaged;
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.Healed;
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.MoveUsed;
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatChanged;
+import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatusDamage;
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatusInflicted;
 import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.TurnSkipped;
 import it.unicam.cs.mpgc.rpg132007.model.Stat;
@@ -14,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ItalianNarratorTest {
 
-    private final Narrator narrator = new ItalianNarrator();
+    private final GameNarrator narrator = new ItalianNarrator();
 
     @Test
     void describesMovesAndDamage() {
@@ -33,8 +39,17 @@ class ItalianNarratorTest {
 
     @Test
     void describesHealingAndStatuses() {
-        assertEquals("Gli HP di Eroe sono già al massimo.", narrator.describe(new Healed("Eroe", 0)));
-        assertEquals("Goblin è avvelenato!", narrator.describe(new StatusInflicted("Goblin", Status.VELENO)));
-        assertEquals("Goblin dorme profondamente...", narrator.describe(new TurnSkipped("Goblin", Status.SONNO)));
+        assertEquals("Eroe recupera 10 HP.", narrator.describe(new Healed("Eroe", 10)));
+        assertEquals("Goblin è avvelenato!", narrator.describe(new StatusInflicted("Goblin", Status.POISON)));
+        assertEquals("Goblin dorme profondamente...", narrator.describe(new TurnSkipped("Goblin", Status.SLEEP)));
+        assertEquals("Goblin soffre per la bruciatura: 4 danni.", narrator.describe(new StatusDamage("Goblin", Status.BURN, 4)));
+    }
+
+    @Test
+    void describesGameEvents() {
+        assertEquals("LEVEL UP! Ora sei al livello 3.", narrator.describe(new LevelReached(3)));
+        assertEquals("Eroe vuole imparare Fendente, ma conosce già 4 mosse.",
+                narrator.describe(new SkillWaiting("Eroe", "Fendente", 4)));
+        assertTrue(narrator.describe(new PpRestored(PpRefill.BOSS)).contains("boss"));
     }
 }
