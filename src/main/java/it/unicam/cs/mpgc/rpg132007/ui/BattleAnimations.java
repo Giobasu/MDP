@@ -1,5 +1,7 @@
 package it.unicam.cs.mpgc.rpg132007.ui;
 
+import it.unicam.cs.mpgc.rpg132007.core.ResourceSprites;
+
 import javafx.animation.FadeTransition;
 import javafx.animation.KeyFrame;
 import javafx.animation.ParallelTransition;
@@ -11,21 +13,42 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /** Le animazioni della battaglia: ingresso degli sprite, colpi subiti ed effetti ASCII delle mosse. */
 final class BattleAnimations {
 
-    /** Fotogrammi ASCII di un colpo e delle scintille per cure e potenziamenti. */
-    private static final String[] HIT_FRAMES = {
-            "    /\n   / \n  /  ",
-            "    /  /\n   /  / \n  /  /  ",
-            " \\   /  /\n  \\ /  / \n   X  /  \n  / \\/   "};
-    private static final String[] SUPPORT_FRAMES = {
-            "   +   ",
-            "  + +  \n   +   ",
-            " +   + \n  + +  \n   +   ",
-            "+     +\n +   + \n       "};
+    /** Riga che separa un fotogramma dal successivo nei file .txt delle animazioni. */
+    private static final String FRAME_SEPARATOR = "---";
+
+    /** Fotogrammi ASCII di un colpo e delle scintille per cure e potenziamenti, letti dalle risorse. */
+    private static final List<String> HIT_FRAMES = frames("hit.txt");
+    private static final List<String> SUPPORT_FRAMES = frames("support.txt");
 
     private BattleAnimations() {
+    }
+
+    /**
+     * Legge un'animazione da un file .txt accanto a questa classe: i fotogrammi sono separati da una riga "---".
+     * Le righe vengono allungate tutte alla stessa larghezza, così il disegno non si sposta da un fotogramma all'altro
+     * (gli editor tolgono gli spazi in fondo alle righe).
+     */
+    private static List<String> frames(String file) {
+        List<String> lines = ResourceSprites.load(BattleAnimations.class, file);
+        int width = lines.stream().mapToInt(String::length).max().orElse(0);
+        List<String> frames = new ArrayList<>();
+        List<String> current = new ArrayList<>();
+        for (String line : lines) {
+            if (line.equals(FRAME_SEPARATOR)) {
+                frames.add(String.join("\n", current));
+                current.clear();
+            } else {
+                current.add(line + " ".repeat(width - line.length()));
+            }
+        }
+        frames.add(String.join("\n", current));
+        return List.copyOf(frames);
     }
 
     /** Lo sprite entra scorrendo da fromX. */
@@ -75,18 +98,18 @@ final class BattleAnimations {
             lunge.setCycleCount(2);
             lunge.play();
         }
-        String[] frames = support ? SUPPORT_FRAMES : HIT_FRAMES;
+        List<String> frames = support ? SUPPORT_FRAMES : HIT_FRAMES;
         Label overlay = new Label();
         overlay.setMouseTransparent(true);
         overlay.getStyleClass().addAll("fx", support ? "fx-support" : "fx-hit");
         StackPane.setAlignment(overlay, Pos.CENTER);
         target.getChildren().add(overlay);
         Timeline anim = new Timeline();
-        for (int i = 0; i < frames.length; i++) {
-            String frame = frames[i];
+        for (int i = 0; i < frames.size(); i++) {
+            String frame = frames.get(i);
             anim.getKeyFrames().add(new KeyFrame(Duration.millis(90 + 110 * i), e -> overlay.setText(frame)));
         }
-        anim.getKeyFrames().add(new KeyFrame(Duration.millis(90 + 110 * frames.length),
+        anim.getKeyFrames().add(new KeyFrame(Duration.millis(90 + 110 * frames.size()),
                 e -> target.getChildren().remove(overlay)));
         anim.play();
     }
