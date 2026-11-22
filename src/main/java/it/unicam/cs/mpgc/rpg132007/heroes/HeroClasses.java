@@ -80,7 +80,7 @@ public final class HeroClasses implements HeroClassCatalog {
                         damage("Affondo", 1, 15, 100, 1, true,
                                 "Un colpo di punta che ignora la difesa.", Effect.NONE),
                         damage("Squarcio", 2, 10, 80, 1, false,
-                                "Ferita profonda: il nemico sanguina (POISON) per 4 turni.", Effect.inflict(POISON, 4)),
+                                "Ferita profonda: il nemico sanguina (VELENO) per 4 turni.", Effect.inflict(POISON, 4)),
                         self("Concentrazione", 3, 8, "STATO",
                                 "Alza il tuo ATTACCO e la tua DIFESA.",
                                 Effect.raise(ATTACK, 1).and(Effect.raise(DEFENSE, 1))),
