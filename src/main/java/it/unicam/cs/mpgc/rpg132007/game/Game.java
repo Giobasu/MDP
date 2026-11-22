@@ -1,11 +1,10 @@
 package it.unicam.cs.mpgc.rpg132007.game;
 
-import it.unicam.cs.mpgc.rpg132007.action.Action;
-import it.unicam.cs.mpgc.rpg132007.action.Skill;
 import it.unicam.cs.mpgc.rpg132007.battle.Battle;
-import it.unicam.cs.mpgc.rpg132007.battle.Message;
 import it.unicam.cs.mpgc.rpg132007.battle.Message.Tone;
+import it.unicam.cs.mpgc.rpg132007.battle.Message;
 import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
+import it.unicam.cs.mpgc.rpg132007.enemies.EnemyFactory;
 import it.unicam.cs.mpgc.rpg132007.game.GameEvent.AutoSaveStarted;
 import it.unicam.cs.mpgc.rpg132007.game.GameEvent.Defeated;
 import it.unicam.cs.mpgc.rpg132007.game.GameEvent.EnemyDefeated;
@@ -23,11 +22,12 @@ import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClass;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
 import it.unicam.cs.mpgc.rpg132007.heroes.LevelUp;
-import it.unicam.cs.mpgc.rpg132007.persistence.BackgroundSaver;
-import it.unicam.cs.mpgc.rpg132007.persistence.SaveData;
-import it.unicam.cs.mpgc.rpg132007.persistence.SaveListener;
-import it.unicam.cs.mpgc.rpg132007.persistence.SaveRepository;
-import it.unicam.cs.mpgc.rpg132007.world.EnemyFactory;
+import it.unicam.cs.mpgc.rpg132007.moves.Action;
+import it.unicam.cs.mpgc.rpg132007.moves.Skill;
+import it.unicam.cs.mpgc.rpg132007.save.BackgroundSaver;
+import it.unicam.cs.mpgc.rpg132007.save.SaveData;
+import it.unicam.cs.mpgc.rpg132007.save.SaveListener;
+import it.unicam.cs.mpgc.rpg132007.save.SaveRepository;
 
 import java.io.IOException;
 import java.util.ArrayList;

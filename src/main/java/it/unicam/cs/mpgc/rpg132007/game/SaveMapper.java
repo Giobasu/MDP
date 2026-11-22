@@ -3,8 +3,8 @@ package it.unicam.cs.mpgc.rpg132007.game;
 import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClass;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
-import it.unicam.cs.mpgc.rpg132007.model.Inventory;
-import it.unicam.cs.mpgc.rpg132007.persistence.SaveData;
+import it.unicam.cs.mpgc.rpg132007.heroes.Inventory;
+import it.unicam.cs.mpgc.rpg132007.save.SaveData;
 
 import java.io.IOException;
 

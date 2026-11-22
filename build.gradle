@@ -29,7 +29,7 @@ dependencies {
 }
 
 application {
-    mainClass = 'it.unicam.cs.mpgc.rpg132007.view.RpgApp'
+    mainClass = 'it.unicam.cs.mpgc.rpg132007.ui.RpgApp'
     applicationDefaultJvmArgs = ['--enable-native-access=javafx.graphics']
 }
 

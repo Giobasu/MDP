@@ -1,19 +1,19 @@
 package it.unicam.cs.mpgc.rpg132007.heroes;
 
-import it.unicam.cs.mpgc.rpg132007.action.DamageMove;
-import it.unicam.cs.mpgc.rpg132007.action.Effect;
-import it.unicam.cs.mpgc.rpg132007.action.HealMove;
-import it.unicam.cs.mpgc.rpg132007.action.Skill;
-import it.unicam.cs.mpgc.rpg132007.action.StatusMove;
-import it.unicam.cs.mpgc.rpg132007.model.Appearance;
-import it.unicam.cs.mpgc.rpg132007.model.ResourceSprites;
-import it.unicam.cs.mpgc.rpg132007.model.Stats;
+import it.unicam.cs.mpgc.rpg132007.core.Appearance;
+import it.unicam.cs.mpgc.rpg132007.core.ResourceSprites;
+import it.unicam.cs.mpgc.rpg132007.core.Stats;
+import it.unicam.cs.mpgc.rpg132007.moves.DamageMove;
+import it.unicam.cs.mpgc.rpg132007.moves.Effect;
+import it.unicam.cs.mpgc.rpg132007.moves.HealMove;
+import it.unicam.cs.mpgc.rpg132007.moves.Skill;
+import it.unicam.cs.mpgc.rpg132007.moves.StatusMove;
 
 import java.util.List;
 
-import static it.unicam.cs.mpgc.rpg132007.model.Stat.ATTACK;
-import static it.unicam.cs.mpgc.rpg132007.model.Stat.DEFENSE;
-import static it.unicam.cs.mpgc.rpg132007.model.Status.*;
+import static it.unicam.cs.mpgc.rpg132007.core.Stat.ATTACK;
+import static it.unicam.cs.mpgc.rpg132007.core.Stat.DEFENSE;
+import static it.unicam.cs.mpgc.rpg132007.core.Status.*;
 
 /**
  * Le classi giocabili del gioco base, un metodo per classe. Per aggiungerne una basta scrivere un nuovo metodo,

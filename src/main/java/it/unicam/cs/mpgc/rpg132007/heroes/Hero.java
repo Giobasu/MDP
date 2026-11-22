@@ -1,11 +1,9 @@
 package it.unicam.cs.mpgc.rpg132007.heroes;
 
-import it.unicam.cs.mpgc.rpg132007.action.Action;
-import it.unicam.cs.mpgc.rpg132007.action.Attack;
-import it.unicam.cs.mpgc.rpg132007.action.DrinkPotion;
-import it.unicam.cs.mpgc.rpg132007.action.Skill;
-import it.unicam.cs.mpgc.rpg132007.model.Combatant;
-import it.unicam.cs.mpgc.rpg132007.model.Inventory;
+import it.unicam.cs.mpgc.rpg132007.core.Combatant;
+import it.unicam.cs.mpgc.rpg132007.moves.Action;
+import it.unicam.cs.mpgc.rpg132007.moves.Attack;
+import it.unicam.cs.mpgc.rpg132007.moves.Skill;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

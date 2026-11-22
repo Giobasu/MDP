@@ -1,19 +1,19 @@
 package it.unicam.cs.mpgc.rpg132007.game;
 
-import it.unicam.cs.mpgc.rpg132007.action.Attack;
-import it.unicam.cs.mpgc.rpg132007.action.Skill;
 import it.unicam.cs.mpgc.rpg132007.battle.Message;
+import it.unicam.cs.mpgc.rpg132007.core.Appearance;
+import it.unicam.cs.mpgc.rpg132007.core.Stats;
 import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
+import it.unicam.cs.mpgc.rpg132007.enemies.EnemyFactory;
+import it.unicam.cs.mpgc.rpg132007.enemies.Reward;
+import it.unicam.cs.mpgc.rpg132007.enemies.StageEnemyFactory;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
-import it.unicam.cs.mpgc.rpg132007.model.Appearance;
-import it.unicam.cs.mpgc.rpg132007.narration.ItalianNarrator;
-import it.unicam.cs.mpgc.rpg132007.model.Reward;
-import it.unicam.cs.mpgc.rpg132007.model.Stats;
-import it.unicam.cs.mpgc.rpg132007.persistence.JsonSaveRepository;
-import it.unicam.cs.mpgc.rpg132007.persistence.SaveListener;
-import it.unicam.cs.mpgc.rpg132007.world.EnemyFactory;
-import it.unicam.cs.mpgc.rpg132007.world.StageEnemyFactory;
+import it.unicam.cs.mpgc.rpg132007.moves.Attack;
+import it.unicam.cs.mpgc.rpg132007.moves.Skill;
+import it.unicam.cs.mpgc.rpg132007.save.JsonSaveRepository;
+import it.unicam.cs.mpgc.rpg132007.save.SaveListener;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
