@@ -9,6 +9,7 @@ import it.unicam.cs.mpgc.rpg132007.game.Game;
 import it.unicam.cs.mpgc.rpg132007.game.Route;
 import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
 import it.unicam.cs.mpgc.rpg132007.model.Inventory;
+import it.unicam.cs.mpgc.rpg132007.persistence.SaveListener;
 import javafx.application.Platform;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -46,6 +47,7 @@ class BattleView extends BorderPane {
 
     private final Label stageLabel = new Label();
     private final Label purse = new Label();
+    private final Label saveStatus = new Label();
     private final InfoBox enemyInfo = new InfoBox(false);
     private final InfoBox heroInfo = new InfoBox(true);
     private final StatBar exp = heroInfo.addBar("EXP", "fill-exp", false, 5);
@@ -76,7 +78,7 @@ class BattleView extends BorderPane {
         purse.getStyleClass().add("gold");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox top = new HBox(16, stageLabel, spacer, purse);
+        HBox top = new HBox(16, stageLabel, spacer, saveStatus, purse);
         top.setPadding(new Insets(12, 22, 0, 22));
         setTop(top);
         setCenter(arena());
@@ -90,7 +92,29 @@ class BattleView extends BorderPane {
                 Platform.runLater(this::requestFocus);
             }
         });
+        game.setAutoSaveListener(saveFeedback);
         startEncounter();
+    }
+
+    /**
+     * Esito dei salvataggi in background, mostrato in alto. Viene chiamato dal thread di salvataggio:
+     * JavaFX permette di toccare la grafica solo dal suo thread, quindi si passa da Platform.runLater.
+     */
+    private final SaveListener saveFeedback = new SaveListener() {
+        @Override
+        public void saved() {
+            Platform.runLater(() -> showSaveStatus("Partita salvata", "save-ok"));
+        }
+
+        @Override
+        public void failed(IOException error) {
+            Platform.runLater(() -> showSaveStatus("Salvataggio non riuscito: " + error.getMessage(), "save-ko"));
+        }
+    };
+
+    private void showSaveStatus(String text, String style) {
+        saveStatus.setText(text);
+        saveStatus.getStyleClass().setAll("label", style);
     }
 
     // ---------------------------------------------------------------- layout
@@ -356,15 +380,11 @@ class BattleView extends BorderPane {
         showMessages(List.of(result), this::showAfterBattleMenu);
     }
 
+    /** Il salvataggio parte in background: l'esito compare in alto quando la scrittura è finita. */
     private void save() {
-        Message result;
-        try {
-            game.save();
-            result = new Message("Partita salvata.", Tone.INFO);
-        } catch (IOException e) {
-            result = new Message("Errore nel salvataggio: " + e.getMessage(), Tone.DANGER);
-        }
-        showMessages(List.of(result), this::showAfterBattleMenu);
+        showSaveStatus("Salvataggio...", "save-busy");
+        game.saveInBackground(saveFeedback);
+        showMessages(List.of(new Message("Salvataggio in corso...", Tone.INFO)), this::showAfterBattleMenu);
     }
 
     // ---------------------------------------------------------------- messaggi e menu

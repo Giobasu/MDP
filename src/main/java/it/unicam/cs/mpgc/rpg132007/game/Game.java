@@ -11,7 +11,9 @@ import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
 import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClass;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
+import it.unicam.cs.mpgc.rpg132007.persistence.BackgroundSaver;
 import it.unicam.cs.mpgc.rpg132007.persistence.SaveData;
+import it.unicam.cs.mpgc.rpg132007.persistence.SaveListener;
 import it.unicam.cs.mpgc.rpg132007.persistence.SaveRepository;
 import it.unicam.cs.mpgc.rpg132007.world.EnemyFactory;
 
@@ -34,6 +36,7 @@ public class Game {
     private final EnemyFactory enemies;
     private final SaveRepository saves;
     private final SaveMapper saveMapper;
+    private final BackgroundSaver saver;
     private final RandomGenerator random;
     private final Narrator narrator = new ItalianNarrator();
     private Hero hero;
@@ -41,12 +44,15 @@ public class Game {
     /** Decide sia il nemico (élite o no, anche quando si riprova) sia se la fonte è disponibile. */
     private Route lastRoute;
     private Battle battle;
+    /** Chi vuole sapere com'è andato il salvataggio automatico dopo un boss (di solito la view). */
+    private SaveListener autoSaveListener = SaveListener.IGNORE;
 
     /** Con un generatore fissato (seed) le partite sono ripetibili: serve ai test. */
     public Game(EnemyFactory enemies, HeroClassCatalog heroClasses, SaveRepository saves, RandomGenerator random) {
         this.enemies = enemies;
         this.saves = saves;
         this.saveMapper = new SaveMapper(heroClasses);
+        this.saver = new BackgroundSaver(saves);
         this.random = random;
     }
 
@@ -122,18 +128,10 @@ public class Game {
         if (enemy.isBoss()) {
             hero.restorePp();
             log.add(new Message("Il boss è caduto: i PP di tutte le mosse sono stati ricaricati!", Tone.REWARD));
-            log.add(autoSave());
+            saveInBackground(autoSaveListener);
+            log.add(new Message("Salvataggio automatico in corso...", Tone.INFO));
         }
         return log;
-    }
-
-    private Message autoSave() {
-        try {
-            save();
-            return new Message("Salvataggio automatico completato.", Tone.INFO);
-        } catch (IOException e) {
-            return new Message("Salvataggio automatico non riuscito: " + e.getMessage(), Tone.DANGER);
-        }
     }
 
     /** Se perdi tieni metà EXP, ricarichi i PP e riprovi lo stesso stage: così non resti mai bloccato. */
@@ -185,8 +183,30 @@ public class Game {
         return List.of(new Message(hero.getName() + " non impara " + skipped.name() + ".", Tone.INFO));
     }
 
+    /** Salva subito, nel thread di chi chiama. */
     public void save() throws IOException {
-        saves.save(saveMapper.toSaveData(hero, stage));
+        saver.saveNow(snapshot());
+    }
+
+    /**
+     * Salva in un thread separato e avvisa il listener a scrittura finita.
+     * La "fotografia" della partita si scatta qui, nel thread di chi chiama: il thread di salvataggio
+     * lavora solo su dati immutabili, quindi la partita può continuare intanto senza race condition.
+     */
+    public void saveInBackground(SaveListener listener) {
+        saver.saveInBackground(snapshot(), listener);
+    }
+
+    /** Il listener del salvataggio automatico dopo ogni boss. */
+    public void setAutoSaveListener(SaveListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException("Listener null: usare SaveListener.IGNORE");
+        }
+        autoSaveListener = listener;
+    }
+
+    private SaveData snapshot() {
+        return saveMapper.toSaveData(hero, stage);
     }
 
     /** Ritorna false se non c'è nessun salvataggio. La battaglia in corso riparte da capo. */

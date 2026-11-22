@@ -10,6 +10,7 @@ import it.unicam.cs.mpgc.rpg132007.model.Appearance;
 import it.unicam.cs.mpgc.rpg132007.model.Reward;
 import it.unicam.cs.mpgc.rpg132007.model.Stats;
 import it.unicam.cs.mpgc.rpg132007.persistence.PropertiesSaveRepository;
+import it.unicam.cs.mpgc.rpg132007.persistence.SaveListener;
 import it.unicam.cs.mpgc.rpg132007.world.EnemyFactory;
 import it.unicam.cs.mpgc.rpg132007.world.StageEnemyFactory;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -43,6 +46,23 @@ class GameTest {
         return game;
     }
 
+    /** Il salvataggio automatico è in background: i test devono aspettarlo prima che JUnit cancelli la cartella. */
+    private static CountDownLatch awaitAutoSave(Game game) {
+        CountDownLatch done = new CountDownLatch(1);
+        game.setAutoSaveListener(new SaveListener() {
+            @Override
+            public void saved() {
+                done.countDown();
+            }
+
+            @Override
+            public void failed(IOException error) {
+                // il latch non scende: il test che aspetta fallisce per timeout
+            }
+        });
+        return done;
+    }
+
     private static int maxPp(Skill skill) {
         return skill.maxPp().getAsInt();
     }
@@ -59,23 +79,27 @@ class GameTest {
     }
 
     @Test
-    void ppComeBackAfterBossOrDefeatButNotAfterNormalWins() {
+    void ppComeBackAfterBossOrDefeatButNotAfterNormalWins() throws InterruptedException {
         assertPpRestored(false, false, false);
         assertPpRestored(true, false, true);
         assertPpRestored(false, true, true);
     }
 
     /** Spende un PP, gioca una battaglia contro un nemico finto (boss o normale, debole o fortissimo) e controlla i PP. */
-    private void assertPpRestored(boolean boss, boolean heroLoses, boolean expectRestored) {
+    private void assertPpRestored(boolean boss, boolean heroLoses, boolean expectRestored) throws InterruptedException {
         EnemyFactory factory = stage -> new Enemy("Finto", stage, new Stats(heroLoses ? 10_000 : 1, heroLoses ? 10_000 : 0, 0),
                 new Appearance(List.of(), "#fff"), new Reward(1, 1), new Attack(), 1, boss);
         Game game = game(factory, "pp.properties");
         game.newGame("Test", CLASSES.byId("lancer").orElseThrow());
+        CountDownLatch autoSave = awaitAutoSave(game);
         Skill skill = game.getHero().getSkills().getFirst();
         game.getHero().spendPp(skill);
 
         game.playTurn(new Attack());
 
+        if (boss && !heroLoses) {
+            assertTrue(autoSave.await(5, TimeUnit.SECONDS), "il salvataggio automatico deve finire");
+        }
         assertTrue(game.getBattle().isOver());
         assertEquals(expectRestored ? maxPp(skill) : maxPp(skill) - 1, game.getHero().getPp(skill),
                 "boss=" + boss + " sconfitta=" + heroLoses);
@@ -137,14 +161,16 @@ class GameTest {
     }
 
     @Test
-    void bossVictoryAutosaves() {
+    void bossVictoryAutosavesInBackground() throws InterruptedException {
         EnemyFactory weakBoss = stage -> new Enemy("Boss", stage, new Stats(1, 0, 0),
                 new Appearance(List.of(), "#fff"), new Reward(1, 1), new Attack(), 1, true);
         Game game = game(weakBoss, "auto.properties");
         game.newGame("Test", CLASSES.byId("lancer").orElseThrow());
+        CountDownLatch done = awaitAutoSave(game);
 
         game.playTurn(new Attack());
 
+        assertTrue(done.await(5, TimeUnit.SECONDS), "il salvataggio automatico deve finire");
         assertTrue(Files.exists(dir.resolve("auto.properties")));
     }
 

@@ -3,17 +3,18 @@ package it.unicam.cs.mpgc.rpg132007.persistence;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 
-/** Salva su un file .properties (formato chiave=valore della libreria standard). */
-public class PropertiesSaveRepository implements SaveRepository {
+/**
+ * Salva su un file .properties (formato chiave=valore della libreria standard).
+ * Formato alternativo a {@link JsonSaveRepository}: il gioco usa il JSON, questo resta come esempio
+ * di come si cambia formato senza toccare il resto del programma.
+ */
+public class PropertiesSaveRepository extends FileSaveRepository {
 
     /** I PP di ogni mossa sono salvati come "pp.Nome della mossa=5"; i salvataggi vecchi non li hanno. */
     private static final String PP_PREFIX = "pp.";
@@ -21,18 +22,12 @@ public class PropertiesSaveRepository implements SaveRepository {
     private static final String SKILLS = "skills";
     private static final String SEPARATOR = ",";
 
-    private final Path file;
-
     public PropertiesSaveRepository(Path file) {
-        this.file = file;
-    }
-
-    public static PropertiesSaveRepository inUserHome() {
-        return new PropertiesSaveRepository(Path.of(System.getProperty("user.home"), ".rpg132007", "save.properties"));
+        super(file);
     }
 
     @Override
-    public void save(SaveData data) throws IOException {
+    protected void write(SaveData data, Writer writer) throws IOException {
         Properties props = new Properties();
         props.setProperty("name", data.name());
         props.setProperty("heroClass", data.heroClass());
@@ -43,13 +38,27 @@ public class PropertiesSaveRepository implements SaveRepository {
         props.setProperty("potions", String.valueOf(data.potions()));
         data.usedPp().forEach((move, left) -> props.setProperty(PP_PREFIX + move, String.valueOf(left)));
         props.setProperty(SKILLS, String.join(SEPARATOR, data.skills()));
-        Files.createDirectories(file.toAbsolutePath().getParent());
-        // scrive su un file temporaneo e poi lo sostituisce: un crash a metà non corrompe il vecchio salvataggio
-        Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
-        try (Writer writer = Files.newBufferedWriter(tmp)) {
-            props.store(writer, "Salvataggio RPG");
+        props.store(writer, "Salvataggio RPG");
+    }
+
+    @Override
+    protected SaveData read(Reader reader) throws IOException {
+        Properties props = new Properties();
+        props.load(reader);
+        try {
+            return new SaveData(
+                    props.getProperty("name"),
+                    props.getProperty("heroClass"),
+                    Integer.parseInt(props.getProperty("level")),
+                    Integer.parseInt(props.getProperty("exp")),
+                    Integer.parseInt(props.getProperty("stage")),
+                    Integer.parseInt(props.getProperty("gold")),
+                    Integer.parseInt(props.getProperty("potions")),
+                    readPp(props),
+                    readSkills(props));
+        } catch (IllegalArgumentException e) {
+            throw new IOException("Salvataggio corrotto o di una versione precedente: " + file(), e);
         }
-        Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
 
     private static Map<String, Integer> readPp(Properties props) {
@@ -65,30 +74,5 @@ public class PropertiesSaveRepository implements SaveRepository {
     private static List<String> readSkills(Properties props) {
         String value = props.getProperty(SKILLS, "");
         return value.isBlank() ? List.of() : List.of(value.split(SEPARATOR));
-    }
-
-    @Override
-    public Optional<SaveData> load() throws IOException {
-        if (!Files.exists(file)) {
-            return Optional.empty();
-        }
-        Properties props = new Properties();
-        try (Reader reader = Files.newBufferedReader(file)) {
-            props.load(reader);
-        }
-        try {
-            return Optional.of(new SaveData(
-                    props.getProperty("name"),
-                    props.getProperty("heroClass"),
-                    Integer.parseInt(props.getProperty("level")),
-                    Integer.parseInt(props.getProperty("exp")),
-                    Integer.parseInt(props.getProperty("stage")),
-                    Integer.parseInt(props.getProperty("gold")),
-                    Integer.parseInt(props.getProperty("potions")),
-                    readPp(props),
-                    readSkills(props)));
-        } catch (IllegalArgumentException e) {
-            throw new IOException("Salvataggio corrotto o di una versione precedente: " + file, e);
-        }
     }
 }

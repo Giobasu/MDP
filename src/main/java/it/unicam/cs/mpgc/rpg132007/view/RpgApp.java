@@ -3,7 +3,7 @@ package it.unicam.cs.mpgc.rpg132007.view;
 import it.unicam.cs.mpgc.rpg132007.game.Game;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
-import it.unicam.cs.mpgc.rpg132007.persistence.PropertiesSaveRepository;
+import it.unicam.cs.mpgc.rpg132007.persistence.JsonSaveRepository;
 import it.unicam.cs.mpgc.rpg132007.world.StageEnemyFactory;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -42,7 +42,7 @@ public class RpgApp extends Application {
                 .findFirst()
                 .orElse("Monospaced");
         heroClasses = new HeroClasses();
-        game = new Game(new StageEnemyFactory(), heroClasses, PropertiesSaveRepository.inUserHome(), new Random());
+        game = new Game(new StageEnemyFactory(), heroClasses, JsonSaveRepository.inUserHome(), new Random());
         // la finestra si adatta allo schermo (anche con lo zoom di Windows al 125-150%)
         Rectangle2D screen = Screen.getPrimary().getVisualBounds();
         scene = new Scene(new Region(), Math.min(1100, screen.getWidth() * 0.95), Math.min(800, screen.getHeight() * 0.92));
