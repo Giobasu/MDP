@@ -44,7 +44,8 @@ cd <nome-cartella>
 ./gradlew run
 ```
 
-Il salvataggio viene scritto in `~/.rpg132007/save.properties`.
+Il salvataggio viene scritto in formato JSON in `~/.rpg132007/save.json`, in un thread separato
+per non bloccare l'interfaccia.
 
 ---
 

@@ -1,18 +1,19 @@
 package it.unicam.cs.mpgc.rpg132007.game;
 
-import it.unicam.cs.mpgc.rpg132007.action.Action;
-import it.unicam.cs.mpgc.rpg132007.action.DamageMove;
-import it.unicam.cs.mpgc.rpg132007.action.Skill;
-import it.unicam.cs.mpgc.rpg132007.action.StatusMove;
+import it.unicam.cs.mpgc.rpg132007.core.Combatant;
 import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
+import it.unicam.cs.mpgc.rpg132007.enemies.StageEnemyFactory;
 import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClass;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
-import it.unicam.cs.mpgc.rpg132007.model.Combatant;
-import it.unicam.cs.mpgc.rpg132007.persistence.SaveData;
-import it.unicam.cs.mpgc.rpg132007.persistence.SaveRepository;
-import it.unicam.cs.mpgc.rpg132007.world.StageEnemyFactory;
+import it.unicam.cs.mpgc.rpg132007.moves.Action;
+import it.unicam.cs.mpgc.rpg132007.moves.DamageMove;
+import it.unicam.cs.mpgc.rpg132007.moves.Skill;
+import it.unicam.cs.mpgc.rpg132007.moves.StatusMove;
+import it.unicam.cs.mpgc.rpg132007.save.SaveData;
+import it.unicam.cs.mpgc.rpg132007.save.SaveRepository;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.Comparator;
@@ -69,7 +70,7 @@ class BalanceTest {
     }
 
     private static Result play(HeroClass heroClass) {
-        Game game = new Game(new StageEnemyFactory(), CLASSES, NO_SAVES, new Random(42));
+        Game game = new Game(new StageEnemyFactory(), CLASSES, NO_SAVES, new ItalianNarrator(), new Random(42));
         game.newGame("Sim", heroClass);
         int defeats = 0;
         int turns = 0;

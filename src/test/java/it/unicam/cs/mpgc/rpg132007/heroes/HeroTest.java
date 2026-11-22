@@ -1,8 +1,8 @@
 package it.unicam.cs.mpgc.rpg132007.heroes;
 
-import it.unicam.cs.mpgc.rpg132007.action.Attack;
-import it.unicam.cs.mpgc.rpg132007.action.Skill;
-import it.unicam.cs.mpgc.rpg132007.model.Inventory;
+import it.unicam.cs.mpgc.rpg132007.moves.Attack;
+import it.unicam.cs.mpgc.rpg132007.moves.Skill;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -21,9 +21,11 @@ class HeroTest {
         Hero hero = new Hero("Test", WARRIOR);
         assertEquals(1, hero.getSkills().size(), "al Lv1 si ha già la prima abilità");
 
-        int gained = hero.gainExp(20 + 40 + 5); // Lv1 -> Lv3, avanzano 5 EXP
+        LevelUp levelUp = hero.gainExp(20 + 40 + 5); // Lv1 -> Lv3, avanzano 5 EXP
 
-        assertEquals(2, gained);
+        assertEquals(2, levelUp.levelsGained());
+        assertEquals(List.of("Rafforzatore", "Colpo di Scudo"), levelUp.learned().stream().map(Skill::name).toList());
+        assertEquals(List.of(), levelUp.waiting());
         assertEquals(3, hero.getLevel());
         assertEquals(5, hero.getExp());
         assertEquals(WARRIOR.statsFor(3).attack(), hero.getAttack());
@@ -83,12 +85,12 @@ class HeroTest {
     @Test
     void loadedSkillsIgnoreUnknownOrLockedNames() {
         Hero hero = new Hero("Test", WARRIOR, 9, 0, new Inventory(0, 0));
-        hero.loadSkills(List.of("Spada Sacra", "Inesistente", "Colpo Devastante", "Fendente"));
-        assertEquals(List.of("Spada Sacra", "Fendente"), hero.getSkillNames(), "Colpo Devastante è del Lv12");
+        hero.loadSkills(List.of("Spada Divina", "Inesistente", "Squarcio Infuocato", "Fendente"));
+        assertEquals(List.of("Spada Divina", "Fendente"), hero.getSkillNames(), "Squarcio Infuocato è del Lv12");
 
         Hero old = new Hero("Test", WARRIOR, 9, 0, new Inventory(0, 0));
         old.loadSkills(List.of());
-        assertEquals(Hero.MAX_SKILLS, old.getSkills().size(), "i salvataggi vecchi tengono le prime skill");
+        assertEquals(Hero.MAX_SKILLS, old.getSkills().size(), "senza nomi validi si tengono le prime skill");
     }
 
     @Test

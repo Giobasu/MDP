@@ -1,12 +1,11 @@
 package it.unicam.cs.mpgc.rpg132007.enemies;
 
-import it.unicam.cs.mpgc.rpg132007.action.Action;
-import it.unicam.cs.mpgc.rpg132007.action.Attack;
-import it.unicam.cs.mpgc.rpg132007.model.Appearance;
-import it.unicam.cs.mpgc.rpg132007.model.Combatant;
-import it.unicam.cs.mpgc.rpg132007.model.Reward;
-import it.unicam.cs.mpgc.rpg132007.model.Stats;
-import it.unicam.cs.mpgc.rpg132007.model.Status;
+import it.unicam.cs.mpgc.rpg132007.core.Appearance;
+import it.unicam.cs.mpgc.rpg132007.core.Combatant;
+import it.unicam.cs.mpgc.rpg132007.core.Stats;
+import it.unicam.cs.mpgc.rpg132007.core.Status;
+import it.unicam.cs.mpgc.rpg132007.moves.Action;
+import it.unicam.cs.mpgc.rpg132007.moves.Attack;
 
 /**
  * Un nemico: attacca normalmente e ogni {@code specialEvery} turni usa la sua mossa speciale.
@@ -50,6 +49,6 @@ public class Enemy extends Combatant {
     /** I boss non si possono addormentare, altrimenti basterebbe una mossa per bloccarli. */
     @Override
     protected boolean isImmuneTo(Status s) {
-        return boss && s == Status.SONNO;
+        return boss && s == Status.SLEEP;
     }
 }

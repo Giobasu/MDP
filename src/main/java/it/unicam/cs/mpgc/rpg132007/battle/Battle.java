@@ -1,18 +1,18 @@
 package it.unicam.cs.mpgc.rpg132007.battle;
 
-import it.unicam.cs.mpgc.rpg132007.action.Action;
-import it.unicam.cs.mpgc.rpg132007.action.MoveContext;
-import it.unicam.cs.mpgc.rpg132007.battle.Message.Fx;
+import it.unicam.cs.mpgc.rpg132007.battle.Message.MoveUse;
 import it.unicam.cs.mpgc.rpg132007.battle.Message.Tone;
+import it.unicam.cs.mpgc.rpg132007.core.BattleEvent.MoveUnavailable;
+import it.unicam.cs.mpgc.rpg132007.core.BattleEvent.StatusCured;
+import it.unicam.cs.mpgc.rpg132007.core.BattleEvent.StatusDamage;
+import it.unicam.cs.mpgc.rpg132007.core.BattleEvent.TurnSkipped;
+import it.unicam.cs.mpgc.rpg132007.core.BattleEvent;
+import it.unicam.cs.mpgc.rpg132007.core.Combatant;
+import it.unicam.cs.mpgc.rpg132007.core.Status;
 import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
 import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.MoveUnavailable;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatusCured;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatusDamage;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.TurnSkipped;
-import it.unicam.cs.mpgc.rpg132007.model.Combatant;
-import it.unicam.cs.mpgc.rpg132007.model.Status;
+import it.unicam.cs.mpgc.rpg132007.moves.Action;
+import it.unicam.cs.mpgc.rpg132007.moves.MoveContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,11 +79,9 @@ public class Battle {
     private void perform(Combatant user, Combatant target, Action action, Tone tone, List<Message> log) {
         MoveContext context = new MoveContext(random.nextInt(100) < CRITICAL_CHANCE);
         List<BattleEvent> events = action.execute(user, target, context);
-        boolean fromHero = user == hero;
-        boolean onEnemySide = action.targetsEnemy() == fromHero;
-        Fx fx = new Fx(onEnemySide, fromHero, !action.targetsEnemy());
+        MoveUse move = new MoveUse(user == hero, action.targetsEnemy());
         for (int i = 0; i < events.size(); i++) {
-            log.add(new Message(narrator.describe(events.get(i)), tone, hero.getHp(), enemy.getHp(), i == 0 ? fx : null));
+            log.add(new Message(narrator.describe(events.get(i)), tone, hero.getHp(), enemy.getHp(), i == 0 ? move : null));
         }
     }
 

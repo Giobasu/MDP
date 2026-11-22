@@ -1,26 +1,30 @@
 package it.unicam.cs.mpgc.rpg132007.battle;
 
-import it.unicam.cs.mpgc.rpg132007.action.Action;
-import it.unicam.cs.mpgc.rpg132007.action.Attack;
-import it.unicam.cs.mpgc.rpg132007.action.DamageMove;
-import it.unicam.cs.mpgc.rpg132007.action.DrinkPotion;
-import it.unicam.cs.mpgc.rpg132007.action.Effect;
-import it.unicam.cs.mpgc.rpg132007.action.MoveContext;
-import it.unicam.cs.mpgc.rpg132007.action.Skill;
-import it.unicam.cs.mpgc.rpg132007.action.StatusMove;
+import it.unicam.cs.mpgc.rpg132007.core.Appearance;
+import it.unicam.cs.mpgc.rpg132007.core.BattleEvent.Damaged;
+import it.unicam.cs.mpgc.rpg132007.core.BattleEvent.Healed;
+import it.unicam.cs.mpgc.rpg132007.core.BattleEvent.StatChanged;
+import it.unicam.cs.mpgc.rpg132007.core.BattleEvent;
+import it.unicam.cs.mpgc.rpg132007.core.Combatant;
+import it.unicam.cs.mpgc.rpg132007.core.Stat;
+import it.unicam.cs.mpgc.rpg132007.core.Stats;
+import it.unicam.cs.mpgc.rpg132007.core.Status;
 import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
+import it.unicam.cs.mpgc.rpg132007.enemies.Reward;
+import it.unicam.cs.mpgc.rpg132007.game.ItalianNarrator;
+import it.unicam.cs.mpgc.rpg132007.heroes.DrinkPotion;
 import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClass;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
-import it.unicam.cs.mpgc.rpg132007.model.Appearance;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.Damaged;
-import it.unicam.cs.mpgc.rpg132007.model.BattleEvent.StatChanged;
-import it.unicam.cs.mpgc.rpg132007.model.Combatant;
-import it.unicam.cs.mpgc.rpg132007.model.Reward;
-import it.unicam.cs.mpgc.rpg132007.model.Stat;
-import it.unicam.cs.mpgc.rpg132007.model.Stats;
-import it.unicam.cs.mpgc.rpg132007.model.Status;
+import it.unicam.cs.mpgc.rpg132007.moves.Action;
+import it.unicam.cs.mpgc.rpg132007.moves.Attack;
+import it.unicam.cs.mpgc.rpg132007.moves.DamageMove;
+import it.unicam.cs.mpgc.rpg132007.moves.Effect;
+import it.unicam.cs.mpgc.rpg132007.moves.HealMove;
+import it.unicam.cs.mpgc.rpg132007.moves.MoveContext;
+import it.unicam.cs.mpgc.rpg132007.moves.Skill;
+import it.unicam.cs.mpgc.rpg132007.moves.StatusMove;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -151,13 +155,20 @@ class BattleTest {
         rage.execute(hero, enemy(100, 0, 0), MoveContext.NORMAL);
         assertEquals(11 * 6 / 4, hero.getAttack());
 
-        rage.execute(hero, enemy(100, 0, 0), MoveContext.NORMAL);
-        assertEquals(Combatant.MAX_STAGE, hero.getStage(Stat.ATTACK));
+        while (hero.getStage(Stat.ATTACK) < Combatant.MAX_STAGE) {
+            rage.execute(hero, enemy(100, 0, 0), MoveContext.NORMAL);
+        }
+        assertEquals(Combatant.MAX_STAGE, hero.getStage(Stat.ATTACK), "non supera il massimo");
         StatChanged maxed = find(rage.execute(hero, enemy(100, 0, 0), MoveContext.NORMAL), StatChanged.class);
         assertEquals(0, maxed.changed(), "già al massimo");
 
         hero.restore();
         assertEquals(0, hero.getStage(Stat.ATTACK), "i modificatori durano una sola battaglia");
+
+        for (int i = 0; i <= Combatant.MAX_STAGE; i++) {
+            hero.changeStage(Stat.DEFENSE, -1);
+        }
+        assertEquals(-Combatant.MAX_STAGE, hero.getStage(Stat.DEFENSE), "non scende sotto il minimo");
     }
 
     @Test
@@ -165,7 +176,7 @@ class BattleTest {
         Hero hero = warrior();
         Enemy enemy = enemy(200, 0, 0);
         Battle battle = battle(hero, enemy);
-        new DamageMove("Veleno", "", 0, 1, true, Effect.inflict(Status.VELENO, 2)).execute(hero, enemy, MoveContext.NORMAL);
+        new DamageMove("Veleno", "", 0, 1, true, Effect.inflict(Status.POISON, 2)).execute(hero, enemy, MoveContext.NORMAL);
         int afterHit = enemy.getHp();
 
         Action wait = new StatusMove("Attesa", "STATO", false, "", Effect.NONE);
@@ -173,7 +184,7 @@ class BattleTest {
         battle.playTurn(wait);
         battle.playTurn(wait);
 
-        int tick = 200 * Status.VELENO.damagePercent() / 100;
+        int tick = 200 * Status.POISON.damagePercent() / 100;
         assertEquals(afterHit - 2 * tick, enemy.getHp());
         assertNull(enemy.getStatus());
     }
@@ -187,6 +198,18 @@ class BattleTest {
         new DamageMove("Vampiro", "", 100, 1, true, Effect.drain(50)).execute(hero, enemy(100, 0, 0), MoveContext.NORMAL);
 
         assertEquals(before + 11 / 2, hero.getHp());
+    }
+
+    @Test
+    void healingMovesCannotBeUsedWithFullHp() {
+        Hero hero = warrior();
+        HealMove heal = new HealMove("Cura", 30);
+        assertFalse(heal.isUsableBy(hero), "con gli HP al massimo sprecherebbe il turno");
+
+        hero.takeDamage(1000, true);
+        assertTrue(heal.isUsableBy(hero));
+        List<BattleEvent> events = heal.execute(hero, enemy(10, 0, 0), MoveContext.NORMAL);
+        assertEquals(hero.getMaxHp() * 30 / 100, find(events, Healed.class).amount());
     }
 
     @Test
@@ -220,7 +243,7 @@ class BattleTest {
     void sleepSkipsTurnsAndBossesAreImmune() {
         Hero hero = warrior();
         Enemy enemy = enemy(1000, 10, 0);
-        assertTrue(enemy.inflict(Status.SONNO, 2));
+        assertTrue(enemy.inflict(Status.SLEEP, 2));
         Battle battle = battle(hero, enemy);
 
         battle.playTurn(new Attack());
@@ -231,16 +254,16 @@ class BattleTest {
         assertNull(enemy.getStatus());
 
         Enemy boss = enemy(1000, 10, 0, true);
-        assertFalse(boss.inflict(Status.SONNO, 2));
-        assertTrue(boss.inflict(Status.VELENO, 2), "i boss resistono solo al sonno");
-        assertFalse(boss.inflict(Status.PARALISI, 2), "uno stato alla volta");
+        assertFalse(boss.inflict(Status.SLEEP, 2));
+        assertTrue(boss.inflict(Status.POISON, 2), "i boss resistono solo al sonno");
+        assertFalse(boss.inflict(Status.PARALYSIS, 2), "uno stato alla volta");
     }
 
     @Test
     void paralysisUsesTheRandomGenerator() {
         Hero hero = warrior();
         Enemy enemy = enemy(1000, 10, 0);
-        enemy.inflict(Status.PARALISI, 5);
+        enemy.inflict(Status.PARALYSIS, 5);
 
         new Battle(hero, enemy, () -> 0L, NARRATOR).playTurn(new Attack()); // 0 -> tira sempre "salta il turno"
         assertEquals(hero.getMaxHp(), hero.getHp());
@@ -251,10 +274,10 @@ class BattleTest {
 
     @Test
     void sleepNeverUsesTheRandomGenerator() {
-        assertTrue(Status.SONNO.skipsTurn(() -> {
+        assertTrue(Status.SLEEP.skipsTurn(() -> {
             throw new AssertionError("il sonno non tira dadi");
         }));
-        assertFalse(Status.VELENO.skipsTurn(() -> {
+        assertFalse(Status.POISON.skipsTurn(() -> {
             throw new AssertionError("il veleno non tira dadi");
         }));
     }
@@ -263,22 +286,23 @@ class BattleTest {
     void burnLowersAttackAndHurts() {
         Hero hero = warrior();
         int attack = hero.getAttack();
-        hero.inflict(Status.BRUCIATURA, 3);
+        hero.inflict(Status.BURN, 3);
         assertEquals(attack * 3 / 4, hero.getAttack());
 
         battle(hero, enemy(1000, 0, 0)).playTurn(new Attack());
-        assertEquals(hero.getMaxHp() - hero.getMaxHp() * Status.BRUCIATURA.damagePercent() / 100 - 1, hero.getHp());
+        assertEquals(hero.getMaxHp() - hero.getMaxHp() * Status.BURN.damagePercent() / 100 - 1, hero.getHp());
     }
 
     @Test
-    void movesCarryAnimationInfo() {
+    void movesSayWhoActedAndOnWhom() {
         Hero hero = warrior();
         List<Message> log = battle(hero, enemy(1000, 10, 0)).playTurn(new Attack());
 
-        Message.Fx heroFx = log.getFirst().fx();
-        assertTrue(heroFx.onEnemySide() && heroFx.fromHero() && !heroFx.support());
-        Message enemyLine = log.stream().filter(m -> m.tone() == Message.Tone.ENEMY && m.fx() != null).findFirst().orElseThrow();
-        assertFalse(enemyLine.fx().onEnemySide(), "il colpo del nemico si anima sul lato dell'eroe");
+        Message.MoveUse heroMove = log.getFirst().move();
+        assertTrue(heroMove.byHero() && heroMove.targetsOpponent());
+        Message enemyLine = log.stream().filter(m -> m.tone() == Message.Tone.ENEMY && m.move() != null).findFirst().orElseThrow();
+        assertFalse(enemyLine.move().byHero());
+        assertTrue(enemyLine.move().targetsOpponent());
     }
 
     @Test

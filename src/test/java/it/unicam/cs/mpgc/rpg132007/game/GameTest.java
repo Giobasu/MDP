@@ -1,17 +1,19 @@
 package it.unicam.cs.mpgc.rpg132007.game;
 
-import it.unicam.cs.mpgc.rpg132007.action.Attack;
-import it.unicam.cs.mpgc.rpg132007.action.Skill;
 import it.unicam.cs.mpgc.rpg132007.battle.Message;
+import it.unicam.cs.mpgc.rpg132007.core.Appearance;
+import it.unicam.cs.mpgc.rpg132007.core.Stats;
 import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
+import it.unicam.cs.mpgc.rpg132007.enemies.EnemyFactory;
+import it.unicam.cs.mpgc.rpg132007.enemies.Reward;
+import it.unicam.cs.mpgc.rpg132007.enemies.StageEnemyFactory;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
-import it.unicam.cs.mpgc.rpg132007.model.Appearance;
-import it.unicam.cs.mpgc.rpg132007.model.Reward;
-import it.unicam.cs.mpgc.rpg132007.model.Stats;
-import it.unicam.cs.mpgc.rpg132007.persistence.PropertiesSaveRepository;
-import it.unicam.cs.mpgc.rpg132007.world.EnemyFactory;
-import it.unicam.cs.mpgc.rpg132007.world.StageEnemyFactory;
+import it.unicam.cs.mpgc.rpg132007.moves.Attack;
+import it.unicam.cs.mpgc.rpg132007.moves.Skill;
+import it.unicam.cs.mpgc.rpg132007.save.JsonSaveRepository;
+import it.unicam.cs.mpgc.rpg132007.save.SaveListener;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -20,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,13 +38,30 @@ class GameTest {
     Path dir;
 
     private Game game(EnemyFactory enemies, String saveFile) {
-        return new Game(enemies, CLASSES, new PropertiesSaveRepository(dir.resolve(saveFile)), new Random(1));
+        return new Game(enemies, CLASSES, new JsonSaveRepository(dir.resolve(saveFile)), new ItalianNarrator(), new Random(1));
     }
 
     private Game newGame() {
-        Game game = game(new StageEnemyFactory(), "save.properties");
+        Game game = game(new StageEnemyFactory(), "save.json");
         game.newGame("Test", CLASSES.byId("lancer").orElseThrow());
         return game;
+    }
+
+    /** Il salvataggio automatico è in background: i test devono aspettarlo prima che JUnit cancelli la cartella. */
+    private static CountDownLatch awaitAutoSave(Game game) {
+        CountDownLatch done = new CountDownLatch(1);
+        game.setAutoSaveListener(new SaveListener() {
+            @Override
+            public void saved() {
+                done.countDown();
+            }
+
+            @Override
+            public void failed(IOException error) {
+                // il latch non scende: il test che aspetta fallisce per timeout
+            }
+        });
+        return done;
     }
 
     private static int maxPp(Skill skill) {
@@ -59,23 +80,27 @@ class GameTest {
     }
 
     @Test
-    void ppComeBackAfterBossOrDefeatButNotAfterNormalWins() {
+    void ppComeBackAfterBossOrDefeatButNotAfterNormalWins() throws InterruptedException {
         assertPpRestored(false, false, false);
         assertPpRestored(true, false, true);
         assertPpRestored(false, true, true);
     }
 
     /** Spende un PP, gioca una battaglia contro un nemico finto (boss o normale, debole o fortissimo) e controlla i PP. */
-    private void assertPpRestored(boolean boss, boolean heroLoses, boolean expectRestored) {
+    private void assertPpRestored(boolean boss, boolean heroLoses, boolean expectRestored) throws InterruptedException {
         EnemyFactory factory = stage -> new Enemy("Finto", stage, new Stats(heroLoses ? 10_000 : 1, heroLoses ? 10_000 : 0, 0),
                 new Appearance(List.of(), "#fff"), new Reward(1, 1), new Attack(), 1, boss);
-        Game game = game(factory, "pp.properties");
+        Game game = game(factory, "pp.json");
         game.newGame("Test", CLASSES.byId("lancer").orElseThrow());
+        CountDownLatch autoSave = awaitAutoSave(game);
         Skill skill = game.getHero().getSkills().getFirst();
         game.getHero().spendPp(skill);
 
         game.playTurn(new Attack());
 
+        if (boss && !heroLoses) {
+            assertTrue(autoSave.await(5, TimeUnit.SECONDS), "il salvataggio automatico deve finire");
+        }
         assertTrue(game.getBattle().isOver());
         assertEquals(expectRestored ? maxPp(skill) : maxPp(skill) - 1, game.getHero().getPp(skill),
                 "boss=" + boss + " sconfitta=" + heroLoses);
@@ -116,7 +141,7 @@ class GameTest {
         game.getHero().spendPp(skill);
         game.save();
 
-        Game loaded = game(new StageEnemyFactory(), "save.properties");
+        Game loaded = game(new StageEnemyFactory(), "save.json");
         loaded.load();
         assertEquals(maxPp(skill) - 2, loaded.getHero().getPp(skill));
     }
@@ -130,22 +155,24 @@ class GameTest {
         assertFalse(log.isEmpty());
         game.save();
 
-        Game loaded = game(new StageEnemyFactory(), "save.properties");
+        Game loaded = game(new StageEnemyFactory(), "save.json");
         loaded.load();
         assertEquals(game.getHero().getSkillNames(), loaded.getHero().getSkillNames());
         assertFalse(loaded.getHero().knows(forgotten));
     }
 
     @Test
-    void bossVictoryAutosaves() {
+    void bossVictoryAutosavesInBackground() throws InterruptedException {
         EnemyFactory weakBoss = stage -> new Enemy("Boss", stage, new Stats(1, 0, 0),
                 new Appearance(List.of(), "#fff"), new Reward(1, 1), new Attack(), 1, true);
-        Game game = game(weakBoss, "auto.properties");
+        Game game = game(weakBoss, "auto.json");
         game.newGame("Test", CLASSES.byId("lancer").orElseThrow());
+        CountDownLatch done = awaitAutoSave(game);
 
         game.playTurn(new Attack());
 
-        assertTrue(Files.exists(dir.resolve("auto.properties")));
+        assertTrue(done.await(5, TimeUnit.SECONDS), "il salvataggio automatico deve finire");
+        assertTrue(Files.exists(dir.resolve("auto.json")));
     }
 
     @Test
@@ -165,7 +192,7 @@ class GameTest {
         game.getHero().getInventory().addGold(42);
         game.save();
 
-        Game loaded = game(new StageEnemyFactory(), "save.properties");
+        Game loaded = game(new StageEnemyFactory(), "save.json");
         assertTrue(loaded.load());
         assertEquals(game.getHero().getLevel(), loaded.getHero().getLevel());
         assertEquals("lancer", loaded.getHero().getHeroClass().id());
@@ -174,9 +201,11 @@ class GameTest {
 
     @Test
     void unknownHeroClassInSaveIsReported() throws IOException {
-        Files.writeString(dir.resolve("save.properties"),
-                "name=X\nheroClass=paladin\nlevel=1\nexp=0\nstage=1\ngold=0\npotions=0\n");
-        Game game = game(new StageEnemyFactory(), "save.properties");
+        Files.writeString(dir.resolve("save.json"), """
+                { "name": "X", "heroClass": "paladin", "level": 1, "exp": 0, "stage": 1,
+                  "gold": 0, "potions": 0, "usedPp": {}, "skills": [] }
+                """);
+        Game game = game(new StageEnemyFactory(), "save.json");
         assertThrows(IOException.class, game::load);
     }
 
@@ -185,7 +214,8 @@ class GameTest {
         Game game = newGame();
         game.save();
         HeroClassCatalog empty = List::of;
-        Game other = new Game(new StageEnemyFactory(), empty, new PropertiesSaveRepository(dir.resolve("save.properties")), new Random(1));
+        Game other = new Game(new StageEnemyFactory(), empty, new JsonSaveRepository(dir.resolve("save.json")),
+                new ItalianNarrator(), new Random(1));
         assertThrows(IOException.class, other::load, "con un catalogo vuoto la classe salvata non esiste");
     }
 

@@ -1,8 +1,8 @@
 package it.unicam.cs.mpgc.rpg132007.heroes;
 
-import it.unicam.cs.mpgc.rpg132007.action.Skill;
-import it.unicam.cs.mpgc.rpg132007.model.Appearance;
-import it.unicam.cs.mpgc.rpg132007.model.Stats;
+import it.unicam.cs.mpgc.rpg132007.core.Appearance;
+import it.unicam.cs.mpgc.rpg132007.core.Stats;
+import it.unicam.cs.mpgc.rpg132007.moves.Skill;
 
 import java.util.List;
 
