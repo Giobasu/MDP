@@ -30,7 +30,7 @@ public class DrinkPotion implements Action {
 
     @Override
     public String description() {
-        return heal.description() + " Consuma il turno.";
+        return heal.description();
     }
 
     @Override

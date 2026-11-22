@@ -17,7 +17,7 @@ public class Attack implements Action {
 
     @Override
     public String description() {
-        return "Colpo base. Si può usare sempre, anche senza PP.";
+        return "Il colpo base: si può usare sempre, anche senza PP.";
     }
 
     @Override

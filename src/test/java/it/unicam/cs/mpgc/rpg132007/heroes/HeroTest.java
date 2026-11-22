@@ -24,7 +24,7 @@ class HeroTest {
         LevelUp levelUp = hero.gainExp(20 + 40 + 5); // Lv1 -> Lv3, avanzano 5 EXP
 
         assertEquals(2, levelUp.levelsGained());
-        assertEquals(List.of("Muro di Scudi", "Colpo di Scudo"), levelUp.learned().stream().map(Skill::name).toList());
+        assertEquals(List.of("Rafforzatore", "Colpo di Scudo"), levelUp.learned().stream().map(Skill::name).toList());
         assertEquals(List.of(), levelUp.waiting());
         assertEquals(3, hero.getLevel());
         assertEquals(5, hero.getExp());
@@ -85,8 +85,8 @@ class HeroTest {
     @Test
     void loadedSkillsIgnoreUnknownOrLockedNames() {
         Hero hero = new Hero("Test", WARRIOR, 9, 0, new Inventory(0, 0));
-        hero.loadSkills(List.of("Spada Sacra", "Inesistente", "Colpo Devastante", "Fendente"));
-        assertEquals(List.of("Spada Sacra", "Fendente"), hero.getSkillNames(), "Colpo Devastante è del Lv12");
+        hero.loadSkills(List.of("Spada Divina", "Inesistente", "Squarcio Infuocato", "Fendente"));
+        assertEquals(List.of("Spada Divina", "Fendente"), hero.getSkillNames(), "Squarcio Infuocato è del Lv12");
 
         Hero old = new Hero("Test", WARRIOR, 9, 0, new Inventory(0, 0));
         old.loadSkills(List.of());

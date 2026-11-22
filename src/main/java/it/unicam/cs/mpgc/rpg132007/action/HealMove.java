@@ -18,7 +18,7 @@ public record HealMove(String name, int percentOfMaxHp) implements Action {
 
     @Override
     public String description() {
-        return "Recupera il " + percentOfMaxHp + "% degli HP massimi.";
+        return "Recupera il " + percentOfMaxHp + "% dei tuoi HP massimi.";
     }
 
     @Override
