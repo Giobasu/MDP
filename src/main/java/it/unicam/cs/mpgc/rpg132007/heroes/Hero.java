@@ -167,7 +167,7 @@ public class Hero extends Combatant {
 
     /**
      * Ripristina le skill conosciute lette da un salvataggio. Si ignorano i nomi sconosciuti o non ancora sbloccati;
-     * se non ne resta nessuno (salvataggi vecchi) si tengono quelle di base.
+     * se non ne resta nessuna (es. tutte rinominate) si tengono quelle di base.
      */
     public void loadSkills(List<String> names) {
         List<Skill> loaded = names.stream()

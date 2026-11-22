@@ -151,13 +151,20 @@ class BattleTest {
         rage.execute(hero, enemy(100, 0, 0), MoveContext.NORMAL);
         assertEquals(11 * 6 / 4, hero.getAttack());
 
-        rage.execute(hero, enemy(100, 0, 0), MoveContext.NORMAL);
-        assertEquals(Combatant.MAX_STAGE, hero.getStage(Stat.ATTACK));
+        while (hero.getStage(Stat.ATTACK) < Combatant.MAX_STAGE) {
+            rage.execute(hero, enemy(100, 0, 0), MoveContext.NORMAL);
+        }
+        assertEquals(Combatant.MAX_STAGE, hero.getStage(Stat.ATTACK), "non supera il massimo");
         StatChanged maxed = find(rage.execute(hero, enemy(100, 0, 0), MoveContext.NORMAL), StatChanged.class);
         assertEquals(0, maxed.changed(), "già al massimo");
 
         hero.restore();
         assertEquals(0, hero.getStage(Stat.ATTACK), "i modificatori durano una sola battaglia");
+
+        for (int i = 0; i <= Combatant.MAX_STAGE; i++) {
+            hero.changeStage(Stat.DEFENSE, -1);
+        }
+        assertEquals(-Combatant.MAX_STAGE, hero.getStage(Stat.DEFENSE), "non scende sotto il minimo");
     }
 
     @Test

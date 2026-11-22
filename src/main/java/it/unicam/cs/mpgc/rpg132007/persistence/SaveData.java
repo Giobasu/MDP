@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * I dati minimi per ricostruire una partita. usedPp contiene solo le mosse che non hanno i PP al massimo;
- * skills sono i nomi delle mosse conosciute (vuoto nei salvataggi vecchi).
+ * skills sono i nomi delle mosse conosciute.
  */
 public record SaveData(String name, String heroClass, int level, int exp, int stage, int gold, int potions,
                        Map<String, Integer> usedPp, List<String> skills) {

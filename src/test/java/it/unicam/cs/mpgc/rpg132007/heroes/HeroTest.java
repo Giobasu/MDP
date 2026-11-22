@@ -88,7 +88,7 @@ class HeroTest {
 
         Hero old = new Hero("Test", WARRIOR, 9, 0, new Inventory(0, 0));
         old.loadSkills(List.of());
-        assertEquals(Hero.MAX_SKILLS, old.getSkills().size(), "i salvataggi vecchi tengono le prime skill");
+        assertEquals(Hero.MAX_SKILLS, old.getSkills().size(), "senza nomi validi si tengono le prime skill");
     }
 
     @Test
