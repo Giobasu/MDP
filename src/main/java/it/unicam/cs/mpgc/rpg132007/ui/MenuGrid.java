@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Menu a griglia con cursore "▶", come nei JRPG classici. Si usa con frecce + invio o col mouse.
+ * Menu a griglia con cursore ">", come nei JRPG classici. Si usa con frecce + invio o col mouse.
  * Le voci sono Label e non Button, così il focus da tastiera resta alla schermata.
  */
 class MenuGrid extends GridPane {
@@ -71,7 +71,7 @@ class MenuGrid extends GridPane {
     private void select(int index) {
         cursor = index;
         for (int i = 0; i < labels.size(); i++) {
-            labels.get(i).setText((i == index ? "▶ " : "  ") + entries.get(i).text());
+            labels.get(i).setText((i == index ? "> " : "  ") + entries.get(i).text());
         }
         Runnable onFocus = entries.get(index).onFocus();
         if (onFocus != null) {

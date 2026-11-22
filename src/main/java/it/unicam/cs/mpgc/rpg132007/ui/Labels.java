@@ -3,9 +3,10 @@ package it.unicam.cs.mpgc.rpg132007.ui;
 import it.unicam.cs.mpgc.rpg132007.core.Stat;
 import it.unicam.cs.mpgc.rpg132007.core.Status;
 import it.unicam.cs.mpgc.rpg132007.game.Route;
+import it.unicam.cs.mpgc.rpg132007.moves.Category;
 
 /**
- * Le etichette brevi con cui l'interfaccia mostra i valori del modello (stati, statistiche, sentieri).
+ * Le etichette brevi con cui l'interfaccia mostra i valori del modello (stati, statistiche, tipi di mossa, sentieri).
  * Stanno qui e non negli enum perché sono una scelta di presentazione: un'altra interfaccia potrebbe usarne altre.
  */
 final class Labels {
@@ -26,6 +27,16 @@ final class Labels {
         return switch (stat) {
             case ATTACK -> "ATK";
             case DEFENSE -> "DEF";
+        };
+    }
+
+    static String category(Category category) {
+        return switch (category) {
+            case PHYSICAL -> "FISICO";
+            case PIERCING -> "PERFORANTE";
+            case STATUS -> "STATO";
+            case HEAL -> "CURA";
+            case ITEM -> "OGGETTO";
         };
     }
 

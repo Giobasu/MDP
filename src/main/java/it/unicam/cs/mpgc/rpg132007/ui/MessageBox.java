@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Il testo del riquadro grande: scrive i messaggi una lettera alla volta, con la freccia "▼" lampeggiante,
+ * Il testo del riquadro grande: scrive i messaggi una lettera alla volta, con la freccia "v" lampeggiante,
  * e passa al successivo con {@link #advance()}. Non sa nulla di menu né di animazioni della battaglia.
  */
 class MessageBox {
@@ -25,7 +25,7 @@ class MessageBox {
 
     private final StackPane box;
     private final Label text = new Label();
-    private final Label nextArrow = new Label("▼");
+    private final Label nextArrow = new Label("v");
     private final Timeline arrowBlink = new Timeline(
             new KeyFrame(Duration.millis(450), e -> nextArrow.setOpacity(nextArrow.getOpacity() > 0 ? 0 : 1)));
     private final Deque<Message> queue = new ArrayDeque<>();

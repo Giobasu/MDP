@@ -77,140 +77,119 @@
 .save-ko { -fx-text-fill: #ff6b6b; }
 .save-busy { -fx-text-fill: #a0a8b8; }
 
-/* ---------- arena ---------- */
+/* ---------- arena (battaglia in stile ASCII: niente sfumature, solo caratteri) ---------- */
 .arena {
-    -fx-background-color: linear-gradient(to bottom, #121826 0%, #161d2b 55%, #1b2232 100%);
-    -fx-background-radius: 10;
-    -fx-background-insets: 8 18 8 18;
+    -fx-background-color: transparent;
 }
 
 .platform {
-    -fx-fill: radial-gradient(center 50% 50%, radius 60%, #2a3346 0%, #1a2030 100%);
-    -fx-stroke: #3b4558;
-    -fx-stroke-width: 1.5;
+    -fx-text-fill: #3b4558;
+    -fx-font-size: 13px;
+}
+
+/* ---------- riquadri con bordo ASCII ---------- */
+.frame-border {
+    -fx-fill: #4a5670;
+    /* righe più strette: i "|" uno sopra l'altro formano una linea quasi continua */
+    -fx-line-spacing: -4;
 }
 
 /* ---------- riquadri info (nome, livello, HP) ---------- */
-.info-box {
-    -fx-background-color: #f2ead3;
-    -fx-background-radius: 10 2 10 2;
-    -fx-border-color: #3b3424;
-    -fx-border-width: 3;
-    -fx-border-radius: 10 2 10 2;
-    -fx-padding: 10 16 10 16;
-    -fx-min-width: 340;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0, 3, 3);
+.info-box .frame-border {
+    -fx-fill: #e8c170;
 }
 
-.info-box.boss {
-    -fx-border-color: #c0392b;
-}
-
-.info-box .label {
-    -fx-text-fill: #2b2618;
+.info-box.boss .frame-border {
+    -fx-fill: #ff4444;
 }
 
 .info-name {
-    -fx-font-size: 17px;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
 }
 
 .info-level {
+    -fx-text-fill: #e8c170;
     -fx-font-size: 15px;
     -fx-font-weight: bold;
 }
 
-.info-box .info-status {
-    -fx-text-fill: #8e3b9e;
-    -fx-font-size: 12px;
+.info-status {
+    -fx-text-fill: #c58af9;
+    -fx-font-size: 13px;
     -fx-font-weight: bold;
 }
 
-.info-box .bar-tag {
+.bar-tag {
     -fx-text-fill: #e9b949;
-    -fx-background-color: #3b3424;
-    -fx-background-radius: 4;
-    -fx-padding: 0 4 0 4;
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-alignment: center;
-}
-
-.info-box .bar-value {
-    -fx-font-size: 14px;
     -fx-font-weight: bold;
 }
 
-.bar-track {
-    -fx-background-color: #3b3424, #5a5242;
-    -fx-background-insets: 0, 2;
-    -fx-background-radius: 4, 3;
-    -fx-padding: 2;
-}
+.bar-bracket { -fx-text-fill: #7f8c9d; }
+.bar-empty   { -fx-text-fill: #3b4558; }
+.bar-fill    { -fx-font-weight: bold; }
+.bar-value   { -fx-text-fill: #d8dee9; -fx-font-weight: bold; }
 
-.bar-fill { -fx-background-radius: 3; }
-.fill-hp-high { -fx-background-color: #3ccf6e; }
-.fill-hp-mid  { -fx-background-color: #f2c12e; }
-.fill-hp-low  { -fx-background-color: #e8483f; }
-.fill-energy  { -fx-background-color: #4aa8e8; }
-.fill-exp     { -fx-background-color: #5bc0f8; }
+.fill-hp-high { -fx-text-fill: #3ccf6e; }
+.fill-hp-mid  { -fx-text-fill: #f2c12e; }
+.fill-hp-low  { -fx-text-fill: #e8483f; }
+.fill-exp     { -fx-text-fill: #5bc0f8; }
 
 /* ---------- riquadri in basso (messaggi e menu) ---------- */
-.textbox {
-    -fx-background-color: #f8f8f0, #2c3e5c, #f8f8f0;
-    -fx-background-insets: 0, 4, 7;
-    -fx-background-radius: 10, 8, 6;
-    -fx-padding: 16 22 16 22;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 12, 0, 0, 3);
+.textbox .frame-border {
+    -fx-fill: #8fa3c7;
 }
 
 .textbox .label {
-    -fx-text-fill: #26262e;
+    -fx-text-fill: #d8dee9;
 }
 
 .textbox .message {
-    -fx-font-size: 19px;
+    -fx-font-size: 18px;
     -fx-line-spacing: 6;
 }
 
-.textbox .msg-hero   { -fx-text-fill: #1f4f8f; }
-.textbox .msg-enemy  { -fx-text-fill: #9c2a2a; }
-.textbox .msg-info   { -fx-text-fill: #26262e; }
-.textbox .msg-reward { -fx-text-fill: #8a6400; -fx-font-weight: bold; }
-.textbox .msg-danger { -fx-text-fill: #c0392b; -fx-font-weight: bold; }
+.textbox .msg-hero   { -fx-text-fill: #7fb2ff; }
+.textbox .msg-enemy  { -fx-text-fill: #ff7b7b; }
+.textbox .msg-info   { -fx-text-fill: #d8dee9; }
+.textbox .msg-reward { -fx-text-fill: #ffd866; -fx-font-weight: bold; }
+.textbox .msg-danger { -fx-text-fill: #ff5555; -fx-font-weight: bold; }
 
 .textbox .next-arrow {
-    -fx-text-fill: #c0392b;
+    -fx-text-fill: #ffcc33;
     -fx-font-size: 16px;
+    -fx-font-weight: bold;
 }
 
 .textbox .menu-item {
-    -fx-font-size: 19px;
+    -fx-font-size: 18px;
     -fx-font-weight: bold;
     -fx-cursor: hand;
     -fx-min-width: 170;
 }
 
 .textbox .menu-item.disabled {
-    -fx-text-fill: #a8a8a8;
+    -fx-text-fill: #5a6478;
 }
 
 .textbox .detail-type {
+    -fx-text-fill: #e8c170;
     -fx-font-size: 15px;
     -fx-font-weight: bold;
 }
 
-.textbox .detail-ok { -fx-text-fill: #1f6fb0; -fx-font-weight: bold; }
-.textbox .detail-ko { -fx-text-fill: #c0392b; -fx-font-weight: bold; }
+.textbox .detail-ok { -fx-text-fill: #7fb2ff; -fx-font-weight: bold; }
+.textbox .detail-ko { -fx-text-fill: #ff5555; -fx-font-weight: bold; }
 
 .textbox .detail-text {
     -fx-font-size: 13px;
-    -fx-text-fill: #4a4a55;
+    -fx-text-fill: #a0a8b8;
 }
 
 .textbox .hint {
     -fx-font-size: 11px;
-    -fx-text-fill: #8a8a95;
+    -fx-text-fill: #6b778d;
     -fx-cursor: hand;
 }
 
@@ -259,20 +238,16 @@
     -fx-background-radius: 5;
 }
 
-/* ---------- stati alterati ---------- */
+/* ---------- stati alterati: testo colorato tra parentesi, es. [VELENO] ---------- */
 .chip {
-    -fx-font-size: 11px;
+    -fx-font-size: 13px;
     -fx-font-weight: bold;
-    -fx-padding: 1 6 1 6;
-    -fx-background-radius: 4;
 }
 
-.info-box .chip, .textbox .chip { -fx-text-fill: #ffffff; }
-
-.st-poison     { -fx-background-color: #9c4dcc; }
-.st-burn       { -fx-background-color: #e8613c; }
-.st-paralysis  { -fx-background-color: #d4a514; }
-.st-sleep      { -fx-background-color: #6d7a8c; }
+.st-poison     { -fx-text-fill: #c58af9; }
+.st-burn       { -fx-text-fill: #ff8a5c; }
+.st-paralysis  { -fx-text-fill: #f2c12e; }
+.st-sleep      { -fx-text-fill: #a0a8b8; }
 
 /* ---------- animazioni delle mosse ---------- */
 .fx {
@@ -286,6 +261,6 @@
 
 /* ---------- schermata STATO ---------- */
 .textbox .status-move   { -fx-font-size: 15px; -fx-font-weight: bold; }
-.textbox .status-locked { -fx-font-size: 15px; -fx-text-fill: #a8a8a8; }
-.textbox .status-pp     { -fx-font-size: 14px; -fx-text-fill: #1f6fb0; -fx-font-weight: bold; }
+.textbox .status-locked { -fx-font-size: 15px; -fx-text-fill: #5a6478; }
+.textbox .status-pp     { -fx-font-size: 14px; -fx-text-fill: #7fb2ff; -fx-font-weight: bold; }
 .textbox .status-stats  { -fx-font-size: 14px; -fx-font-weight: bold; }
