@@ -31,7 +31,7 @@ public final class HeroClasses implements HeroClassCatalog {
 
     private static HeroClass warrior() {
         return new HeroClass("warrior", "Guerriero",
-                "Resistente. Incassa i colpi e picchia duro.",
+                "Forte e resistente, perfetto per iniziare.",
                 new Appearance(sprite("warrior.txt"), "#e8c170"),
                 new Stats(64, 10, 6), new Stats(11, 4, 1),
                 List.of(
@@ -52,7 +52,7 @@ public final class HeroClasses implements HeroClassCatalog {
 
     private static HeroClass archer() {
         return new HeroClass("archer", "Arciere",
-                "Fragile ma letale. Veleno, sonno e raffiche di frecce.",
+                "Status per i nemici e alti danni, attento alla salute.",
                 new Appearance(sprite("archer.txt"), "#9be37b"),
                 new Stats(54, 11, 3), new Stats(12, 4, 1),
                 List.of(
