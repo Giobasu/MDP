@@ -37,12 +37,12 @@ public final class HeroClasses implements HeroClassCatalog {
                 List.of(
                         damage("Fendente", 1, 15, 160, 1, false,
                                 "Un potente colpo di spada.", Effect.NONE),
-                        self("Rafforzatore", 2, 8, "STATO",
+                        self("Rafforzatore", 2, 8,
                                 "Alza molto la tua difesa.", Effect.raise(DEFENSE, 2)),
                         damage("Colpo di Scudo", 3, 10, 90, 1, false,
                                 "Un colpo di scudo che paralizza il nemico per 3 turni.", Effect.inflict(PARALYSIS, 3)),
                         heal("Ripresa", 5, 5, 35),
-                        self("Grido di Guerra", 7, 8, "STATO",
+                        self("Grido di Guerra", 7, 8,
                                 "Alza molto il tuo attacco.", Effect.raise(ATTACK, 2)),
                         damage("Spada Divina", 9, 8, 140, 1, true,
                                 "Un colpo di spada che ignora la difesa nemica e la abbassa.", Effect.lower(DEFENSE, 1)),
@@ -60,7 +60,7 @@ public final class HeroClasses implements HeroClassCatalog {
                                 "Due frecce scoccate in rapida successione.", Effect.NONE),
                         damage("Freccia Avvelenata", 2, 10, 70, 1, false,
                                 "Una freccia che avvelena il nemico per 4 turni.", Effect.inflict(POISON, 4)),
-                        foe("Dardo Soporifero", 3, 5, "STATO",
+                        foe("Dardo Soporifero", 3, 5,
                                 "Addormenta il nemico per 2 turni. Non funziona sui boss.", Effect.inflict(SLEEP, 2)),
                         damage("Freccia di Luce", 5, 8, 160, 1, true,
                                 "Una freccia di luce che ignora la difesa nemica.", Effect.NONE),
@@ -81,7 +81,7 @@ public final class HeroClasses implements HeroClassCatalog {
                                 "Un colpo di punta che ignora la difesa nemica.", Effect.NONE),
                         damage("Squarcio", 2, 10, 80, 1, false,
                                 "Una ferita profonda che avvelena il nemico per 4 turni.", Effect.inflict(POISON, 4)),
-                        self("Concentrazione", 3, 8, "STATO",
+                        self("Concentrazione", 3, 8,
                                 "Alza il tuo attacco e la tua difesa.",
                                 Effect.raise(ATTACK, 1).and(Effect.raise(DEFENSE, 1))),
                         damage("Affondo Drenante", 5, 8, 110, 1, false,
@@ -105,13 +105,13 @@ public final class HeroClasses implements HeroClassCatalog {
     }
 
     /** Mossa di stato su se stessi (potenziamenti). */
-    private static Skill self(String name, int level, int pp, String category, String description, Effect effect) {
-        return new Skill(new StatusMove(name, category, false, description, effect), level, pp);
+    private static Skill self(String name, int level, int pp, String description, Effect effect) {
+        return new Skill(new StatusMove(name, false, description, effect), level, pp);
     }
 
     /** Mossa di stato sull'avversario (stati alterati, indebolimenti). */
-    private static Skill foe(String name, int level, int pp, String category, String description, Effect effect) {
-        return new Skill(new StatusMove(name, category, true, description, effect), level, pp);
+    private static Skill foe(String name, int level, int pp, String description, Effect effect) {
+        return new Skill(new StatusMove(name, true, description, effect), level, pp);
     }
 
     private static List<String> sprite(String file) {

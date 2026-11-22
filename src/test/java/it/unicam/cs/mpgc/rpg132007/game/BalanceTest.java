@@ -8,6 +8,7 @@ import it.unicam.cs.mpgc.rpg132007.heroes.HeroClass;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClasses;
 import it.unicam.cs.mpgc.rpg132007.moves.Action;
+import it.unicam.cs.mpgc.rpg132007.moves.Category;
 import it.unicam.cs.mpgc.rpg132007.moves.DamageMove;
 import it.unicam.cs.mpgc.rpg132007.moves.Skill;
 import it.unicam.cs.mpgc.rpg132007.moves.StatusMove;
@@ -117,8 +118,8 @@ class BalanceTest {
     /** Cura se in pericolo, usa ogni potenziamento una volta, poi la mossa con più danno atteso per turno. */
     private static Action choose(Hero hero, Enemy enemy, Set<String> usedBuffs) {
         int hpPercent = hero.getHp() * 100 / hero.getMaxHp();
-        for (Skill skill : hero.getSkills()) {
-            if (skill.category().equals("CURA") && hpPercent < 45 && hero.canUse(skill)) {
+        for (Skill skill : hero.getMoveset().getSkills()) {
+            if (skill.category() == Category.HEAL && hpPercent < 45 && hero.canUse(skill)) {
                 return skill;
             }
         }
@@ -126,16 +127,16 @@ class BalanceTest {
         if (hpPercent < 30 && hero.canUse(potion)) {
             return potion;
         }
-        for (Skill skill : hero.getSkills()) {
+        for (Skill skill : hero.getMoveset().getSkills()) {
             boolean worthIt = !skill.targetsEnemy() || (enemy.getStatus() == null && !enemy.isBoss());
-            if (skill.move() instanceof StatusMove && skill.category().equals("STATO") && worthIt
+            if (skill.move() instanceof StatusMove && skill.category() == Category.STATUS && worthIt
                     && hero.canUse(skill) && usedBuffs.add(skill.name())) {
                 return skill;
             }
         }
         Action best = hero.getMoves().getFirst(); // attacco base
         double bestDamage = expected(hero, enemy, 100, 1, false);
-        for (Skill skill : hero.getSkills()) {
+        for (Skill skill : hero.getMoveset().getSkills()) {
             if (skill.move() instanceof DamageMove d && hero.canUse(skill)) {
                 double dmg = expected(hero, enemy, d.powerPercent(), d.hits(), d.piercing());
                 if (dmg > bestDamage) {
@@ -154,14 +155,14 @@ class BalanceTest {
     }
 
     private static Skill oldest(Hero hero) {
-        return hero.getSkills().stream().min(Comparator.comparingInt(Skill::unlockLevel)).orElseThrow();
+        return hero.getMoveset().getSkills().stream().min(Comparator.comparingInt(Skill::unlockLevel)).orElseThrow();
     }
 
     private static int ppLeftPercent(Hero hero) {
         int left = 0;
         int max = 0;
-        for (Skill skill : hero.getSkills()) {
-            left += hero.getPp(skill);
+        for (Skill skill : hero.getMoveset().getSkills()) {
+            left += hero.getMoveset().getPp(skill);
             max += skill.maxPp().getAsInt();
         }
         return max == 0 ? 100 : left * 100 / max;

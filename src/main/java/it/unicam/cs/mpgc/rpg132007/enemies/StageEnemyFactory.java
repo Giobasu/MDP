@@ -6,8 +6,8 @@ import java.util.List;
 
 /**
  * La curva di difficoltà: quale tipo di nemico appare a ogni stage e quanto è forte.
- * Ogni {@value #BOSS_EVERY} stage c'è un boss, negli altri un nemico normale; finiti i tipi di {@link EnemyTypes}
- * si ricomincia dal primo, con statistiche sempre più alte. Chi siano i nemici lo decide {@link EnemyTypes}.
+ * Ogni {@value #BOSS_EVERY} stage c'è un boss, negli altri un nemico normale; finiti i tipi del {@link EnemyCatalog}
+ * si ricomincia dal primo, con statistiche sempre più alte. Chi siano i nemici lo decide il catalogo (di base {@link EnemyTypes}).
  */
 public class StageEnemyFactory implements EnemyFactory {
 
@@ -41,7 +41,7 @@ public class StageEnemyFactory implements EnemyFactory {
         this(new EnemyTypes());
     }
 
-    public StageEnemyFactory(EnemyTypes types) {
+    public StageEnemyFactory(EnemyCatalog types) {
         if (types.normal().isEmpty() || types.bosses().isEmpty()) {
             throw new IllegalArgumentException("Servono almeno un nemico normale e un boss");
         }

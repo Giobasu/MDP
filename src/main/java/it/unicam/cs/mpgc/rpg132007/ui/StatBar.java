@@ -9,50 +9,50 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 
 /**
- * Barra stile JRPG ("HP [██████░░░] 40/52") che scorre verso il nuovo valore invece di saltarci.
+ * Barra in stile ASCII ("HP [#######.....] 40/52") che scorre verso il nuovo valore invece di saltarci.
  * Se colorClass è null il colore dipende dalla percentuale (verde, giallo, rosso) come le barre HP classiche.
  */
 class StatBar extends HBox {
 
-    private final double width;
+    private static final char FULL = '#';
+    private static final char EMPTY = '.';
+
+    private final int cells;
     private final String colorClass;
-    private final Region fill = new Region();
+    private final Label filled = new Label();
+    private final Label empty = new Label();
     private final Label value = new Label();
     private final DoubleProperty shown = new SimpleDoubleProperty();
     private Timeline animation;
     private int max = 1;
 
-    StatBar(String caption, String colorClass, boolean showValue, double width, double height) {
-        super(8);
-        this.width = width;
+    /** cells = quanti caratteri è lunga la barra. */
+    StatBar(String caption, String colorClass, boolean showValue, int cells) {
+        this.cells = cells;
         this.colorClass = colorClass;
         setAlignment(Pos.CENTER_LEFT);
 
-        Label tag = new Label(caption);
+        Label tag = new Label(String.format("%-4s", caption)); // stessa larghezza per HP ed EXP: le barre restano allineate
         tag.getStyleClass().add("bar-tag");
-        tag.setMinWidth(34);
-
-        fill.setMinWidth(0);
-        fill.setMaxHeight(Double.MAX_VALUE);
-        StackPane track = new StackPane(fill);
-        track.getStyleClass().add("bar-track");
-        track.setAlignment(Pos.CENTER_LEFT);
-        track.setMinSize(width, height);
-        track.setPrefSize(width, height);
-        track.setMaxSize(width, height);
-
+        tag.setMinWidth(Label.USE_PREF_SIZE);
+        Label open = new Label("[");
+        Label close = new Label("]");
+        open.getStyleClass().add("bar-bracket");
+        close.getStyleClass().add("bar-bracket");
+        empty.getStyleClass().add("bar-empty");
         value.getStyleClass().add("bar-value");
-        value.setMinWidth(80);
-        getChildren().addAll(tag, track);
+        for (Label part : new Label[] {open, filled, empty, close, value}) {
+            part.setMinWidth(Label.USE_PREF_SIZE);
+        }
+        getChildren().addAll(tag, open, filled, empty, close);
         if (showValue) {
             getChildren().add(value);
         }
         shown.addListener((obs, old, now) -> redraw());
+        redraw();
     }
 
     /** Porta la barra a target; con animate=false salta subito (inizio battaglia). */
@@ -74,11 +74,13 @@ class StatBar extends HBox {
 
     private void redraw() {
         double ratio = Math.clamp(shown.get() / max, 0, 1);
-        fill.setMaxWidth(width * ratio);
-        fill.setPrefWidth(width * ratio);
+        // un valore sopra zero si vede sempre almeno con un carattere pieno
+        int full = shown.get() > 0 ? Math.max(1, (int) Math.round(cells * ratio)) : 0;
+        filled.setText(String.valueOf(FULL).repeat(full));
+        empty.setText(String.valueOf(EMPTY).repeat(cells - full));
         String color = colorClass != null ? colorClass
                 : ratio > 0.5 ? "fill-hp-high" : ratio > 0.2 ? "fill-hp-mid" : "fill-hp-low";
-        fill.getStyleClass().setAll("bar-fill", color);
-        value.setText(Math.round(shown.get()) + " / " + max);
+        filled.getStyleClass().setAll("label", "bar-fill", color);
+        value.setText(" " + Math.round(shown.get()) + "/" + max);
     }
 }

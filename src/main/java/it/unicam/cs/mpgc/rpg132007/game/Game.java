@@ -6,26 +6,17 @@ import it.unicam.cs.mpgc.rpg132007.battle.Message;
 import it.unicam.cs.mpgc.rpg132007.enemies.Enemy;
 import it.unicam.cs.mpgc.rpg132007.enemies.EnemyFactory;
 import it.unicam.cs.mpgc.rpg132007.game.GameEvent.AutoSaveStarted;
-import it.unicam.cs.mpgc.rpg132007.game.GameEvent.Defeated;
-import it.unicam.cs.mpgc.rpg132007.game.GameEvent.EnemyDefeated;
-import it.unicam.cs.mpgc.rpg132007.game.GameEvent.ExpGained;
-import it.unicam.cs.mpgc.rpg132007.game.GameEvent.GoldFound;
-import it.unicam.cs.mpgc.rpg132007.game.GameEvent.LevelReached;
 import it.unicam.cs.mpgc.rpg132007.game.GameEvent.PpRefill;
 import it.unicam.cs.mpgc.rpg132007.game.GameEvent.PpRestored;
 import it.unicam.cs.mpgc.rpg132007.game.GameEvent.SkillForgotten;
 import it.unicam.cs.mpgc.rpg132007.game.GameEvent.SkillLearned;
 import it.unicam.cs.mpgc.rpg132007.game.GameEvent.SkillSkipped;
-import it.unicam.cs.mpgc.rpg132007.game.GameEvent.SkillWaiting;
 import it.unicam.cs.mpgc.rpg132007.game.GameEvent.SpringFound;
 import it.unicam.cs.mpgc.rpg132007.heroes.Hero;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClass;
 import it.unicam.cs.mpgc.rpg132007.heroes.HeroClassCatalog;
-import it.unicam.cs.mpgc.rpg132007.heroes.LevelUp;
 import it.unicam.cs.mpgc.rpg132007.moves.Action;
 import it.unicam.cs.mpgc.rpg132007.moves.Skill;
-import it.unicam.cs.mpgc.rpg132007.save.BackgroundSaver;
-import it.unicam.cs.mpgc.rpg132007.save.SaveData;
 import it.unicam.cs.mpgc.rpg132007.save.SaveListener;
 import it.unicam.cs.mpgc.rpg132007.save.SaveRepository;
 
@@ -39,19 +30,17 @@ import java.util.random.RandomGenerator;
  * Lo stato della partita: eroe, stage corrente e battaglia in corso.
  * È l'unico punto d'ingresso per l'interfaccia grafica, che quindi si può sostituire senza toccare il gioco.
  * Tutte le dipendenze (nemici, classi, salvataggi, testi, caso) arrivano da fuori.
+ * Decide come avanza la partita; le ricompense le calcola {@link Rewards}, i salvataggi li gestisce {@link SaveSlot}.
  * Non scrive testo: produce {@link GameEvent} e li fa raccontare dal narratore.
  * Prima di usarla serve {@link #newGame} o {@link #load}.
  */
 public class Game {
 
     public static final int POTION_PRICE = 30;
-    /** Percentuale dell'EXP del nemico che si tiene anche perdendo. */
-    public static final int DEFEAT_EXP_PERCENT = 50;
 
     private final EnemyFactory enemies;
-    private final SaveRepository saves;
-    private final SaveMapper saveMapper;
-    private final BackgroundSaver saver;
+    private final SaveSlot saves;
+    private final Rewards rewards;
     private final GameNarrator narrator;
     private final RandomGenerator random;
     private Hero hero;
@@ -59,16 +48,13 @@ public class Game {
     /** Decide sia il nemico (élite o no, anche quando si riprova) sia se la fonte è disponibile. */
     private Route lastRoute;
     private Battle battle;
-    /** Chi vuole sapere com'è andato il salvataggio automatico dopo un boss (di solito la view). */
-    private SaveListener autoSaveListener = SaveListener.IGNORE;
 
     /** Con un generatore fissato (seed) le partite sono ripetibili: serve ai test. */
     public Game(EnemyFactory enemies, HeroClassCatalog heroClasses, SaveRepository saves, GameNarrator narrator,
                 RandomGenerator random) {
         this.enemies = enemies;
-        this.saves = saves;
-        this.saveMapper = new SaveMapper(heroClasses);
-        this.saver = new BackgroundSaver(saves);
+        this.saves = new SaveSlot(saves, heroClasses);
+        this.rewards = new Rewards(narrator);
         this.narrator = narrator;
         this.random = random;
     }
@@ -107,7 +93,7 @@ public class Game {
         }
         lastRoute = route;
         if (route == Route.SPRING) {
-            hero.restorePp();
+            hero.getMoveset().restorePp();
             stage++;
             return List.of(say(new SpringFound(), Tone.INFO), say(new PpRestored(PpRefill.SPRING), Tone.REWARD));
         }
@@ -118,7 +104,19 @@ public class Game {
     public List<Message> playTurn(Action action) {
         List<Message> log = new ArrayList<>(battle.playTurn(action));
         if (battle.isOver()) {
-            log.addAll(battle.heroWon() ? victory() : defeat());
+            log.addAll(battle.heroWon() ? victory() : rewards.defeat(hero, battle.getEnemy(), stage));
+        }
+        return log;
+    }
+
+    /** Si passa allo stage successivo; dopo un boss la partita si salva da sola. */
+    private List<Message> victory() {
+        stage++;
+        Enemy enemy = battle.getEnemy();
+        List<Message> log = new ArrayList<>(rewards.victory(hero, enemy));
+        if (enemy.isBoss()) {
+            saves.autoSave(hero, stage);
+            log.add(say(new AutoSaveStarted(), Tone.INFO));
         }
         return log;
     }
@@ -132,58 +130,15 @@ public class Game {
         return true;
     }
 
-    private List<Message> victory() {
-        stage++;
-        Enemy enemy = battle.getEnemy();
-        hero.getInventory().addGold(enemy.getReward().gold());
-        List<Message> log = new ArrayList<>();
-        log.add(say(new EnemyDefeated(enemy.getName()), Tone.REWARD));
-        log.add(say(new GoldFound(enemy.getReward().gold()), Tone.REWARD));
-        log.addAll(gainExp(enemy.getReward().exp()));
-        if (enemy.isBoss()) {
-            hero.restorePp();
-            log.add(say(new PpRestored(PpRefill.BOSS), Tone.REWARD));
-            saveInBackground(autoSaveListener);
-            log.add(say(new AutoSaveStarted(), Tone.INFO));
-        }
-        return log;
-    }
-
-    /** Se perdi tieni parte dell'EXP, ricarichi i PP e riprovi lo stesso stage: così non resti mai bloccato. */
-    private List<Message> defeat() {
-        hero.restorePp();
-        List<Message> log = new ArrayList<>();
-        log.add(say(new Defeated(stage), Tone.DANGER));
-        log.add(say(new PpRestored(PpRefill.DEFEAT), Tone.INFO));
-        log.addAll(gainExp(battle.getEnemy().getReward().exp() * DEFEAT_EXP_PERCENT / 100));
-        return log;
-    }
-
-    private List<Message> gainExp(int exp) {
-        List<Message> log = new ArrayList<>();
-        log.add(say(new ExpGained(exp), Tone.REWARD));
-        LevelUp levelUp = hero.gainExp(exp);
-        if (levelUp.levelsGained() > 0) {
-            log.add(say(new LevelReached(hero.getLevel()), Tone.REWARD));
-        }
-        for (Skill skill : levelUp.learned()) {
-            log.add(say(new SkillLearned(hero.getName(), skill.name()), Tone.REWARD));
-        }
-        for (Skill skill : levelUp.waiting()) {
-            log.add(say(new SkillWaiting(hero.getName(), skill.name(), Hero.MAX_SKILLS), Tone.INFO));
-        }
-        return log;
-    }
-
     /** La skill che l'eroe vuole imparare ma per cui deve dimenticarne un'altra (vedi {@link #learnPendingSkill}). */
     public Optional<Skill> pendingSkill() {
-        return hero.getPendingSkill();
+        return hero.getMoveset().getPendingSkill();
     }
 
     /** Impara la skill in attesa dimenticando forgotten. */
     public List<Message> learnPendingSkill(Skill forgotten) {
-        Skill learned = hero.getPendingSkill().orElseThrow(() -> new IllegalStateException("Nessuna skill in attesa"));
-        hero.learnPendingSkill(forgotten);
+        Skill learned = pendingSkill().orElseThrow(() -> new IllegalStateException("Nessuna skill in attesa"));
+        hero.getMoveset().learnPendingSkill(forgotten);
         return List.of(
                 say(new SkillForgotten(hero.getName(), forgotten.name()), Tone.INFO),
                 say(new SkillLearned(hero.getName(), learned.name()), Tone.REWARD));
@@ -191,8 +146,8 @@ public class Game {
 
     /** Rinuncia alla skill in attesa. */
     public List<Message> skipPendingSkill() {
-        Skill skipped = hero.getPendingSkill().orElseThrow(() -> new IllegalStateException("Nessuna skill in attesa"));
-        hero.skipPendingSkill();
+        Skill skipped = pendingSkill().orElseThrow(() -> new IllegalStateException("Nessuna skill in attesa"));
+        hero.getMoveset().skipPendingSkill();
         return List.of(say(new SkillSkipped(hero.getName(), skipped.name()), Tone.INFO));
     }
 
@@ -202,37 +157,26 @@ public class Game {
 
     /** Salva subito, nel thread di chi chiama. */
     public void save() throws IOException {
-        saver.saveNow(snapshot());
+        saves.saveNow(hero, stage);
     }
 
-    /**
-     * Salva in un thread separato e avvisa il listener a scrittura finita.
-     * La "fotografia" della partita si scatta qui, nel thread di chi chiama: il thread di salvataggio
-     * lavora solo su dati immutabili, quindi la partita può continuare intanto senza race condition.
-     */
+    /** Salva in un thread separato e avvisa il listener a scrittura finita (vedi {@link SaveSlot#saveInBackground}). */
     public void saveInBackground(SaveListener listener) {
-        saver.saveInBackground(snapshot(), listener);
+        saves.saveInBackground(hero, stage, listener);
     }
 
     /** Il listener del salvataggio automatico dopo ogni boss. */
     public void setAutoSaveListener(SaveListener listener) {
-        if (listener == null) {
-            throw new IllegalArgumentException("Listener null: usare SaveListener.IGNORE");
-        }
-        autoSaveListener = listener;
-    }
-
-    private SaveData snapshot() {
-        return saveMapper.toSaveData(hero, stage);
+        saves.setAutoSaveListener(listener);
     }
 
     /** Ritorna false se non c'è nessun salvataggio. La battaglia in corso riparte da capo. */
     public boolean load() throws IOException {
-        Optional<SaveData> found = saves.load();
+        Optional<SaveSlot.Loaded> found = saves.load();
         if (found.isEmpty()) {
             return false;
         }
-        hero = saveMapper.toHero(found.get());
+        hero = found.get().hero();
         stage = found.get().stage();
         lastRoute = Route.NORMAL;
         startBattle();

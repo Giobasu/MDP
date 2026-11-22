@@ -22,8 +22,8 @@ public record HealMove(String name, int percentOfMaxHp) implements Action {
     }
 
     @Override
-    public String category() {
-        return "CURA";
+    public Category category() {
+        return Category.HEAL;
     }
 
     @Override

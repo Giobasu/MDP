@@ -3,6 +3,7 @@ package it.unicam.cs.mpgc.rpg132007.heroes;
 import it.unicam.cs.mpgc.rpg132007.core.BattleEvent;
 import it.unicam.cs.mpgc.rpg132007.core.Combatant;
 import it.unicam.cs.mpgc.rpg132007.moves.Action;
+import it.unicam.cs.mpgc.rpg132007.moves.Category;
 import it.unicam.cs.mpgc.rpg132007.moves.HealMove;
 import it.unicam.cs.mpgc.rpg132007.moves.MoveContext;
 
@@ -36,8 +37,8 @@ public class DrinkPotion implements Action {
     }
 
     @Override
-    public String category() {
-        return "OGGETTO";
+    public Category category() {
+        return Category.ITEM;
     }
 
     @Override

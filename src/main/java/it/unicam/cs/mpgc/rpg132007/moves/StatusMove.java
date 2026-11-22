@@ -11,8 +11,12 @@ import java.util.List;
  * Mossa senza danno diretto: potenziamenti, indebolimenti, stati alterati (le cure sono {@link HealMove}). Cosa fa lo decide l'{@link Effect};
  * targetsEnemy dice solo se l'animazione va sull'avversario o su chi la usa.
  */
-public record StatusMove(String name, String category, boolean targetsEnemy, String description,
-                         Effect effect) implements Action {
+public record StatusMove(String name, boolean targetsEnemy, String description, Effect effect) implements Action {
+
+    @Override
+    public Category category() {
+        return Category.STATUS;
+    }
 
     @Override
     public List<BattleEvent> execute(Combatant user, Combatant target, MoveContext context) {

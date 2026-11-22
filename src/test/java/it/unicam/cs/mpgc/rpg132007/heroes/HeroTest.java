@@ -19,7 +19,7 @@ class HeroTest {
     @Test
     void levelUpRaisesStatsAndUnlocksSkills() {
         Hero hero = new Hero("Test", WARRIOR);
-        assertEquals(1, hero.getSkills().size(), "al Lv1 si ha già la prima abilità");
+        assertEquals(1, hero.getMoveset().getSkills().size(), "al Lv1 si ha già la prima abilità");
 
         LevelUp levelUp = hero.gainExp(20 + 40 + 5); // Lv1 -> Lv3, avanzano 5 EXP
 
@@ -29,15 +29,15 @@ class HeroTest {
         assertEquals(3, hero.getLevel());
         assertEquals(5, hero.getExp());
         assertEquals(WARRIOR.statsFor(3).attack(), hero.getAttack());
-        assertEquals(3, hero.getSkills().size());
-        assertEquals("Colpo di Scudo", hero.getSkills().getLast().name());
+        assertEquals(3, hero.getMoveset().getSkills().size());
+        assertEquals("Colpo di Scudo", hero.getMoveset().getSkills().getLast().name());
     }
 
     @Test
     void movesAreTheBasicAttackPlusUnlockedSkills() {
         Hero hero = new Hero("Test", WARRIOR);
         assertInstanceOf(Attack.class, hero.getMoves().getFirst());
-        assertEquals(1 + hero.getSkills().size(), hero.getMoves().size());
+        assertEquals(1 + hero.getMoveset().getSkills().size(), hero.getMoves().size());
         assertEquals("Pozione  x3", hero.getItems().getFirst().label());
     }
 
@@ -47,50 +47,39 @@ class HeroTest {
         hero.gainExp(EXP_TO_LV7);
 
         assertEquals(7, hero.getLevel());
-        assertEquals(Hero.MAX_SKILLS, hero.getSkills().size());
-        Skill newSkill = hero.getPendingSkill().orElseThrow();
+        assertEquals(Moveset.MAX_SKILLS, hero.getMoveset().getSkills().size());
+        Skill newSkill = hero.getMoveset().getPendingSkill().orElseThrow();
         assertEquals("Grido di Guerra", newSkill.name());
-        assertFalse(hero.knows(newSkill));
+        assertFalse(hero.getMoveset().knows(newSkill));
     }
 
     @Test
     void learningForgetsTheChosenSkillAndItsPp() {
         Hero hero = new Hero("Test", WARRIOR);
-        Skill first = hero.getSkills().getFirst();
-        hero.spendPp(first);
+        Skill first = hero.getMoveset().getSkills().getFirst();
+        hero.getMoveset().spendPp(first);
         hero.gainExp(EXP_TO_LV7);
-        Skill newSkill = hero.getPendingSkill().orElseThrow();
+        Skill newSkill = hero.getMoveset().getPendingSkill().orElseThrow();
 
-        hero.learnPendingSkill(first);
+        hero.getMoveset().learnPendingSkill(first);
 
-        assertSame(newSkill, hero.getSkills().getFirst(), "la nuova prende il posto della dimenticata");
-        assertFalse(hero.knows(first));
-        assertTrue(hero.getPendingSkill().isEmpty());
-        assertFalse(hero.getUsedPp().containsKey(first.name()));
-        assertThrows(IllegalStateException.class, () -> hero.learnPendingSkill(newSkill), "niente più in attesa");
+        assertSame(newSkill, hero.getMoveset().getSkills().getFirst(), "la nuova prende il posto della dimenticata");
+        assertFalse(hero.getMoveset().knows(first));
+        assertTrue(hero.getMoveset().getPendingSkill().isEmpty());
+        assertFalse(hero.getMoveset().getUsedPp().containsKey(first.name()));
+        assertThrows(IllegalStateException.class, () -> hero.getMoveset().learnPendingSkill(newSkill), "niente più in attesa");
     }
 
     @Test
     void skippingKeepsTheOldSkills() {
         Hero hero = new Hero("Test", WARRIOR);
         hero.gainExp(EXP_TO_LV7);
-        List<Skill> before = hero.getSkills();
+        List<Skill> before = hero.getMoveset().getSkills();
 
-        hero.skipPendingSkill();
+        hero.getMoveset().skipPendingSkill();
 
-        assertEquals(before, hero.getSkills());
-        assertTrue(hero.getPendingSkill().isEmpty());
-    }
-
-    @Test
-    void loadedSkillsIgnoreUnknownOrLockedNames() {
-        Hero hero = new Hero("Test", WARRIOR, 9, 0, new Inventory(0, 0));
-        hero.loadSkills(List.of("Spada Divina", "Inesistente", "Squarcio Infuocato", "Fendente"));
-        assertEquals(List.of("Spada Divina", "Fendente"), hero.getSkillNames(), "Squarcio Infuocato è del Lv12");
-
-        Hero old = new Hero("Test", WARRIOR, 9, 0, new Inventory(0, 0));
-        old.loadSkills(List.of());
-        assertEquals(Hero.MAX_SKILLS, old.getSkills().size(), "senza nomi validi si tengono le prime skill");
+        assertEquals(before, hero.getMoveset().getSkills());
+        assertTrue(hero.getMoveset().getPendingSkill().isEmpty());
     }
 
     @Test

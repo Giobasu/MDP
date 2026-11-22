@@ -51,7 +51,7 @@ public class Battle {
         }
         List<Message> log = new ArrayList<>();
         if (canAct(hero, Tone.HERO, log)) {
-            hero.spendPp(heroAction); // chi salta il turno non consuma PP, come nei JRPG classici
+            hero.getMoveset().spendPp(heroAction); // chi salta il turno non consuma PP, come nei JRPG classici
             perform(hero, enemy, heroAction, Tone.HERO, log);
         }
         if (enemy.isAlive() && canAct(enemy, Tone.ENEMY, log)) {
